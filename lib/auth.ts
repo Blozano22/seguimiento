@@ -1,0 +1,43 @@
+import CredentialsProvider from 'next-auth/providers/credentials';
+import { NextAuthOptions } from 'next-auth';
+import { getUserByUsername } from '@/config/users';
+
+export const authOptions: NextAuthOptions = {
+  providers: [
+    CredentialsProvider({
+      name: 'Credentials',
+      credentials: {
+        username: { label: 'Usuario', type: 'text' },
+        password: { label: 'Contraseña', type: 'password' },
+      },
+      async authorize(credentials) {
+        if (!credentials?.username || !credentials?.password) return null;
+        const user = getUserByUsername(credentials.username.trim().toLowerCase());
+        if (!user) return null;
+        const expected = process.env[user.passwordEnvKey] || 'americana2025';
+        if (credentials.password !== expected) return null;
+        return {
+          id: user.username,
+          name: user.nombre,
+          email: user.email || undefined,
+          role: user.role,
+        };
+      },
+    }),
+  ],
+  session: { strategy: 'jwt' },
+  callbacks: {
+    jwt({ token, user }) {
+      if (user) token.role = (user as unknown as Record<string, unknown>).role as string;
+      return token;
+    },
+    session({ session, token }) {
+      if (session.user) (session.user as Record<string, unknown>).role = token.role;
+      return session;
+    },
+  },
+  pages: {
+    signIn: '/login',
+  },
+  secret: process.env.NEXTAUTH_SECRET || 'dev-secret-change-in-production',
+};

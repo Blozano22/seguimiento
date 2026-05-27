@@ -1,0 +1,17 @@
+{
+  "gestores": [
+    { "nombre": "Claudia Navarro", "email": "cnavarro@americana.edu.co" },
+    { "nombre": "Aimar Mendoza", "email": "amendoza@americana.edu.co" },
+    { "nombre": "Nayerlis Salas", "email": "nsalas@americana.edu.co" },
+    { "nombre": "Caroll Avendaño", "email": "cavendano@americana.edu.co" },
+    { "nombre": "Karina Muñoz Sierra", "email": "kmunoz@americana.edu.co" },
+    { "nombre": "Samir Palencia Gerónimo", "email": "spalencia@americana.edu.co" },
+    { "nombre": "María Jose Ortega", "email": "mjortega@americana.edu.co" },
+    { "nombre": "Andrea Nuñez", "email": "anunez@americana.edu.co" },
+    { "nombre": "Yelitza Romero", "email": "yromero@americana.edu.co" },
+    { "nombre": "Hillary Ojeda Durango", "email": "hojeda@americana.edu.co" }
+  ],
+  "dis": [
+    { "nombre": "Andres Velandia", "email": "blozano@americana.edu.co" }
+  ]
+}
