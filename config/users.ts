@@ -1,31 +1,43 @@
 export type UserRole = 'Gestor' | 'Diseñador Instruccional' | 'Coordinador' | 'Super Admin';
 
 export interface AppUser {
-  username: string;    // e.g. "kmunoz"
-  nombre: string;      // e.g. "Karina Muñoz Sierra"
+  username: string;
+  nombre: string;
   email: string;
   role: UserRole;
-  passwordEnvKey: string; // key to read from process.env
+  passwordEnvKey: string;
 }
 
 export const USERS: AppUser[] = [
-  // Gestores
-  { username: 'cnavarro',   nombre: 'Claudia Navarro',          email: 'cnavarro@americana.edu.co',   role: 'Gestor', passwordEnvKey: 'PASS_CNAVARRO' },
-  { username: 'amendoza',   nombre: 'Aimar Mendoza',             email: 'amendoza@americana.edu.co',   role: 'Gestor', passwordEnvKey: 'PASS_AMENDOZA' },
-  { username: 'nsalas',     nombre: 'Nayerlis Salas',            email: 'nsalas@americana.edu.co',     role: 'Gestor', passwordEnvKey: 'PASS_NSALAS' },
-  { username: 'cavendano',  nombre: 'Caroll Avendaño',           email: 'cavendano@americana.edu.co',  role: 'Gestor', passwordEnvKey: 'PASS_CAVENDANO' },
-  { username: 'kmunoz',     nombre: 'Karina Muñoz Sierra',       email: 'kmunoz@americana.edu.co',     role: 'Gestor', passwordEnvKey: 'PASS_KMUNOZ' },
-  { username: 'spalencia',  nombre: 'Samir Palencia Gerónimo',   email: 'spalencia@americana.edu.co',  role: 'Gestor', passwordEnvKey: 'PASS_SPALENCIA' },
-  { username: 'mjortega',   nombre: 'María Jose Ortega',         email: 'mjortega@americana.edu.co',   role: 'Gestor', passwordEnvKey: 'PASS_MJORTEGA' },
-  { username: 'anunez',     nombre: 'Andrea Nuñez',              email: 'anunez@americana.edu.co',     role: 'Gestor', passwordEnvKey: 'PASS_ANUNEZ' },
-  { username: 'yromero',    nombre: 'Yelitza Romero',            email: 'yromero@americana.edu.co',    role: 'Gestor', passwordEnvKey: 'PASS_YROMERO' },
-  { username: 'hojeda',     nombre: 'Hillary Ojeda Durango',     email: 'hojeda@americana.edu.co',     role: 'Gestor', passwordEnvKey: 'PASS_HOJEDA' },
-  // DI
-  { username: 'avelandia',  nombre: 'Andres Velandia',           email: 'blozano@americana.edu.co',    role: 'Diseñador Instruccional', passwordEnvKey: 'PASS_AVELANDIA' },
-  // Coordinador
-  { username: 'coordinador', nombre: 'Coordinador',              email: '',                            role: 'Coordinador', passwordEnvKey: 'PASS_ASIGNADOR' },
-  // Super Admin
-  { username: 'admin',      nombre: 'Super Admin',               email: '',                            role: 'Super Admin', passwordEnvKey: 'PASS_ADMIN' },
+  // ── Gestores de contenido ──────────────────────────────────────────────────
+  { username: 'spalencia',    nombre: 'Samir Palencia Gerónimo',     email: 'palenciasamir_adm@americana.edu.co',  role: 'Gestor', passwordEnvKey: 'PASS_SPALENCIA' },
+  { username: 'hojeda',       nombre: 'Hillary Ojeda Durango',        email: 'ojedahillary_adm@americana.edu.co',   role: 'Gestor', passwordEnvKey: 'PASS_HOJEDA' },
+  { username: 'kmunoz',       nombre: 'Karina Muñoz Sierra',          email: 'munozkarina_adm@americana.edu.co',    role: 'Gestor', passwordEnvKey: 'PASS_KMUNOZ' },
+  { username: 'anunez',       nombre: 'Andrea Nuñez Fonseca',         email: 'andreanunez_adm@americana.edu.co',    role: 'Gestor', passwordEnvKey: 'PASS_ANUNEZ' },
+  { username: 'mjortega',     nombre: 'María José Ortega Martínez',   email: 'mariaortega@americana.edu.co',        role: 'Gestor', passwordEnvKey: 'PASS_MJORTEGA' },
+  { username: 'yromero',      nombre: 'Yelitza Romero',               email: 'yelitzaromero_doc@americana.edu.co',  role: 'Gestor', passwordEnvKey: 'PASS_YROMERO' },
+  { username: 'aarrieta',     nombre: 'Alexandra Arrieta',            email: 'arrietaalexandra@americana.edu.co',   role: 'Gestor', passwordEnvKey: 'PASS_AARRIETA' },
+  { username: 'jadie',        nombre: 'Jamer Adie',                   email: 'adiejamer@americana.edu.co',          role: 'Gestor', passwordEnvKey: 'PASS_JADIE' },
+  { username: 'mmantilla',    nombre: 'Milena Mantilla',              email: 'milenamantilla@americana.edu.co',     role: 'Gestor', passwordEnvKey: 'PASS_MMANTILLA' },
+  { username: 'cnavarro',     nombre: 'Claudia Navarro',              email: 'navarroclaudia@americana.edu.co',     role: 'Gestor', passwordEnvKey: 'PASS_CNAVARRO' },
+  { username: 'molaciregui',  nombre: 'Martha Olaciregui',            email: 'molaciregui@americana.edu.co',        role: 'Gestor', passwordEnvKey: 'PASS_MOLACIREGUI' },
+  { username: 'mpimienta',    nombre: 'Martha Pimienta',              email: 'mpimienta@americana.edu.co',          role: 'Gestor', passwordEnvKey: 'PASS_MPIMIENTA' },
+
+  // ── Diseñadores Instruccionales ────────────────────────────────────────────
+  { username: 'adelariveros', nombre: 'Adela Del Rosario Riveros Flores', email: 'adelariveros@americana.edu.co',  role: 'Diseñador Instruccional', passwordEnvKey: 'PASS_ADELARIVEROS' },
+  { username: 'avelandia',    nombre: 'Andrés Felipe Velandia Espitia',   email: 'velandiaandres@americana.edu.co', role: 'Diseñador Instruccional', passwordEnvKey: 'PASS_AVELANDIA' },
+  { username: 'julianvargas', nombre: 'Julián Efrén Vargas Galvis',       email: 'julianvargas@americana.edu.co',   role: 'Diseñador Instruccional', passwordEnvKey: 'PASS_JULIANVARGAS' },
+  { username: 'luztinoco',    nombre: 'Luz Nelly Tinoco Torres',           email: 'Luztinoco@americana.edu.co',     role: 'Diseñador Instruccional', passwordEnvKey: 'PASS_LUZTINOCO' },
+  { username: 'yazminmoreno', nombre: 'Yazmín Moreno Ibáñez',             email: 'YazminMoreno@americana.edu.co',   role: 'Diseñador Instruccional', passwordEnvKey: 'PASS_YAZMINMORENO' },
+  { username: 'luiscortes',   nombre: 'Luis Enrique Cortes Lasso',         email: 'luiscortes_adm@americana.edu.co', role: 'Diseñador Instruccional', passwordEnvKey: 'PASS_LUISCORTES' },
+  { username: 'diegopatino',  nombre: 'Diego Alejandro Patiño Roja',       email: 'diegopatino_adm@americana.edu.co', role: 'Diseñador Instruccional', passwordEnvKey: 'PASS_DIEGOPATINO' },
+
+  // ── Coordinadoras ──────────────────────────────────────────────────────────
+  { username: 'coordinador',  nombre: 'María Escobar',   email: 'coordinacion_gc@americana.edu.co', role: 'Coordinador', passwordEnvKey: 'PASS_ASIGNADOR' },
+  { username: 'kararamirez',  nombre: 'Karina Ramirez',  email: 'coordinacion_di@americana.edu.co', role: 'Coordinador', passwordEnvKey: 'PASS_KARARAMIREZ' },
+
+  // ── Super Admin ────────────────────────────────────────────────────────────
+  { username: 'admin',        nombre: 'Yule',            email: 'yuleicygamero@americana.edu.co',   role: 'Super Admin', passwordEnvKey: 'PASS_ADMIN' },
 ];
 
 export function getUserByUsername(username: string): AppUser | undefined {

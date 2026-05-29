@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { signOut } from 'next-auth/react';
 
 interface CourseRow {
   _nivel: string;
@@ -93,15 +94,29 @@ export default function AdminPage() {
               <p className="text-xs text-gray-500">Trayecto completo de virtualización de cursos</p>
             </div>
           </div>
-          <a
-            href="/"
-            className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M11 15l-3-3m0 0l3-3m-3 3h8M3 12a9 9 0 1118 0 9 9 0 01-18 0z" />
-            </svg>
-            Volver al formulario
-          </a>
+          <div className="flex items-center gap-4">
+            <a href="/connect-gmail" className="flex items-center gap-1.5 text-sm text-indigo-600 hover:text-indigo-800 transition">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              Conectar correos
+            </a>
+            <a href="/" className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M11 15l-3-3m0 0l3-3m-3 3h8M3 12a9 9 0 1118 0 9 9 0 01-18 0z" />
+              </svg>
+              Volver al formulario
+            </a>
+            <button
+              onClick={() => signOut({ callbackUrl: '/login' })}
+              className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              Cerrar sesión
+            </button>
+          </div>
         </div>
       </header>
 

@@ -17,9 +17,10 @@ const SHEET_MAP: Record<string, string> = {
 const NIVELES = ['Pregrado', 'Especializaciones', 'Maestrías', 'Doctorado'];
 
 const GESTORES = [
-  'Claudia Navarro', 'Aimar Mendoza', 'Nayerlis Salas', 'Caroll Avendaño',
-  'Karina Muñoz Sierra', 'Samir Palencia Gerónimo', 'María Jose Ortega',
-  'Andrea Nuñez', 'Yelitza Romero', 'Hillary Ojeda Durango',
+  'Samir Palencia Gerónimo', 'Hillary Ojeda Durango', 'Karina Muñoz Sierra',
+  'Andrea Nuñez Fonseca', 'María José Ortega Martínez', 'Yelitza Romero',
+  'Alexandra Arrieta', 'Jamer Adie', 'Milena Mantilla',
+  'Claudia Navarro', 'Martha Olaciregui', 'Martha Pimienta',
 ];
 
 function getAuth() {

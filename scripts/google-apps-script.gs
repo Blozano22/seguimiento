@@ -1,5 +1,5 @@
 // ============================================================
-// YULE - Google Apps Script para actualización de cursos
+// YULE - Google Apps Script para actualización de cursos y envío de correos
 // Pegar en: Extensiones → Apps Script → reemplazar todo
 // Luego: Implementar → Nueva implementación → Aplicación web
 //   · Ejecutar como: Yo
@@ -18,11 +18,25 @@ function doPost(e) {
       return json({ error: 'No autorizado' });
     }
 
-    const { action, sheetName, asignatura, programa, updates } = body;
+    const { action } = body;
 
     if (action === 'update') {
+      const { sheetName, asignatura, programa, updates } = body;
       const ok = updateCourseRow(sheetName, asignatura, programa, updates);
       return json({ success: ok, updated: ok });
+    }
+
+    if (action === 'sendEmail') {
+      const { to, subject, html, text } = body;
+      if (!to || !subject) return json({ error: 'Faltan campos: to, subject' });
+      const destinatarios = Array.isArray(to) ? to.join(',') : to;
+      MailApp.sendEmail({
+        to: destinatarios,
+        subject: subject,
+        htmlBody: html || text || '',
+        noReply: false,
+      });
+      return json({ success: true });
     }
 
     return json({ error: 'Acción desconocida' });
@@ -82,7 +96,6 @@ function norm(s) {
 
 function findCol(headers, colName) {
   const target = norm(colName);
-  // Lista de variantes conocidas
   const aliases = {
     'estado':                   ['estado', 'estado '],
     'estado curso':             ['estado curso', 'estado curso '],
