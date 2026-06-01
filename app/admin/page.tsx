@@ -35,12 +35,28 @@ const STATE_COLORS: Record<string, string> = {
 const NIVELES = ['Pregrado', 'Especializaciones', 'Maestrías', 'Doctorado'];
 const ESTADOS = ['En proceso', 'En revisión', 'Aprobado DI', 'Corrección', 'Cargado', 'Producido', 'No empezado'];
 
+interface UserInfo {
+  username: string;
+  nombre: string;
+  role: string;
+  hasCustomPassword: boolean;
+}
+
 export default function AdminPage() {
   const [courses, setCourses] = useState<CourseRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterNivel, setFilterNivel] = useState('');
   const [filterEstado, setFilterEstado] = useState('');
+
+  // Password management
+  const [users, setUsers] = useState<UserInfo[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [showPasswords, setShowPasswords] = useState(false);
+  const [passwordInputs, setPasswordInputs] = useState<Record<string, string>>({});
+  const [savingPassword, setSavingPassword] = useState<string | null>(null);
+  const [passwordMsg, setPasswordMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [confirmAdmin, setConfirmAdmin] = useState<string | null>(null); // username pending admin confirm
 
   useEffect(() => {
     fetch(api('/api/admin'))
@@ -234,7 +250,183 @@ export default function AdminPage() {
             </div>
           )}
         </div>
+        {/* Password Management */}
+        <div className="mt-8">
+          <button
+            onClick={() => {
+              setShowPasswords(!showPasswords);
+              if (!showPasswords && users.length === 0) {
+                setLoadingUsers(true);
+                fetch(api('/api/admin/passwords'))
+                  .then(r => r.json())
+                  .then(d => { setUsers(d.users || []); setLoadingUsers(false); })
+                  .catch(() => setLoadingUsers(false));
+              }
+            }}
+            className="flex items-center gap-2 text-sm font-semibold text-gray-700 hover:text-gray-900 transition"
+          >
+            <svg className={`w-4 h-4 transition-transform ${showPasswords ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+            Gestión de contraseñas
+          </button>
+
+          {showPasswords && (
+            <div className="mt-4 bg-white rounded-xl border border-gray-200 overflow-hidden">
+              {/* Toast */}
+              {passwordMsg && (
+                <div className={`mx-4 mt-4 p-3 rounded-lg border text-sm flex items-center gap-2 ${passwordMsg.type === 'success' ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
+                  {passwordMsg.type === 'success' && (
+                    <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                  )}
+                  {passwordMsg.text}
+                  <button onClick={() => setPasswordMsg(null)} className="ml-auto opacity-60 hover:opacity-100">&times;</button>
+                </div>
+              )}
+
+              {loadingUsers ? (
+                <div className="p-8 text-center text-gray-400 text-sm">Cargando usuarios...</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-100 bg-gray-50">
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Usuario</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Nombre</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Rol</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Estado</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase min-w-[280px]">Nueva contraseña</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {users.map(u => {
+                        const isAdmin = u.role === 'Super Admin';
+                        const inputVal = passwordInputs[u.username] || '';
+                        return (
+                          <tr key={u.username} className={`border-b border-gray-50 hover:bg-gray-50 ${isAdmin ? 'bg-amber-50/40' : ''}`}>
+                            <td className="px-4 py-3 font-mono text-xs text-gray-700">{u.username}</td>
+                            <td className="px-4 py-3 text-gray-900">{u.nombre}</td>
+                            <td className="px-4 py-3">
+                              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                isAdmin ? 'bg-amber-100 text-amber-700' :
+                                u.role === 'Coordinador' ? 'bg-emerald-100 text-emerald-700' :
+                                u.role === 'Diseñador Instruccional' ? 'bg-violet-100 text-violet-700' :
+                                'bg-blue-100 text-blue-700'
+                              }`}>{u.role}</span>
+                            </td>
+                            <td className="px-4 py-3">
+                              {u.hasCustomPassword ? (
+                                <span className="text-xs text-green-600 font-medium">Personalizada</span>
+                              ) : (
+                                <span className="text-xs text-gray-400">Por defecto</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex gap-2">
+                                <input
+                                  type="text"
+                                  placeholder="Nueva contraseña..."
+                                  value={inputVal}
+                                  onChange={e => setPasswordInputs(p => ({ ...p, [u.username]: e.target.value }))}
+                                  className="flex-1 px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                />
+                                <button
+                                  onClick={() => {
+                                    if (!inputVal || inputVal.length < 6) {
+                                      setPasswordMsg({ type: 'error', text: 'La contraseña debe tener al menos 6 caracteres' });
+                                      return;
+                                    }
+                                    if (isAdmin) {
+                                      setConfirmAdmin(u.username);
+                                    } else {
+                                      handleChangePassword(u.username, inputVal);
+                                    }
+                                  }}
+                                  disabled={!inputVal || savingPassword === u.username}
+                                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg text-white disabled:opacity-40 disabled:cursor-not-allowed shrink-0 ${
+                                    isAdmin ? 'bg-amber-500 hover:bg-amber-600' : 'bg-indigo-600 hover:bg-indigo-700'
+                                  }`}
+                                >
+                                  {savingPassword === u.username ? '...' : 'Cambiar'}
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Admin confirm modal */}
+        {confirmAdmin && (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+                  <svg className="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-900">Cambiar contraseña de Admin</h3>
+                  <p className="text-xs text-gray-500">Esta acción cambiará tu propia contraseña</p>
+                </div>
+              </div>
+              <p className="text-sm text-gray-600 mb-6">
+                Estás a punto de cambiar la contraseña del <strong>Super Admin</strong>. Asegúrate de recordar la nueva contraseña, de lo contrario no podrás acceder al panel.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setConfirmAdmin(null)}
+                  className="flex-1 py-2.5 text-sm border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => {
+                    const pwd = passwordInputs[confirmAdmin] || '';
+                    setConfirmAdmin(null);
+                    handleChangePassword(confirmAdmin, pwd);
+                  }}
+                  className="flex-1 py-2.5 text-sm font-semibold rounded-xl text-white bg-amber-500 hover:bg-amber-600"
+                >
+                  Sí, cambiar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
+
+  async function handleChangePassword(username: string, newPassword: string) {
+    setSavingPassword(username);
+    setPasswordMsg(null);
+    try {
+      const res = await fetch(api('/api/admin/passwords'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, newPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      const user = users.find(u => u.username === username);
+      setPasswordMsg({ type: 'success', text: `Contraseña de "${user?.nombre || username}" cambiada exitosamente` });
+      setPasswordInputs(p => { const n = { ...p }; delete n[username]; return n; });
+      setUsers(prev => prev.map(u => u.username === username ? { ...u, hasCustomPassword: true } : u));
+    } catch (err) {
+      setPasswordMsg({ type: 'error', text: err instanceof Error ? err.message : 'Error al cambiar contraseña' });
+    } finally {
+      setSavingPassword(null);
+    }
+  }
 }
