@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSession, signOut } from 'next-auth/react';
+import { api } from '@/lib/api';
 
 interface Curso {
   _nivel: string;
@@ -26,7 +27,7 @@ export default function DIPage() {
   const [messages, setMessages] = useState<{ id: string; type: 'success' | 'error'; text: string }[]>([]);
 
   const load = async () => {
-    const res = await fetch('/api/my-courses').then(r => r.json());
+    const res = await fetch(api('/api/my-courses')).then(r => r.json());
     setCursos(res.data || []);
     setLoading(false);
   };
@@ -38,7 +39,7 @@ export default function DIPage() {
     const { curso, actionId } = pendingAction;
     setSaving(true);
     try {
-      const res = await fetch('/api/update', {
+      const res = await fetch(api('/api/update'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

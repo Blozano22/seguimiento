@@ -3,6 +3,7 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
+import { api } from '@/lib/api';
 import personas from '@/config/personas.json';
 
 const IE     = { nombre: 'Lizney Rodriguez Movilla', email: 'innovacioneducativa@americana.edu.co' };
@@ -24,7 +25,7 @@ function ConnectGmailContent() {
   const [toast, setToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
-    fetch('/api/auth/gmail-status')
+    fetch(api('/api/auth/gmail-status'))
       .then(r => r.json())
       .then(d => { setConnected(d.connected || []); setLoading(false); });
   }, []);
@@ -41,7 +42,7 @@ function ConnectGmailContent() {
   };
 
   const handleDisconnect = async (email: string) => {
-    await fetch('/api/auth/gmail-status', {
+    await fetch(api('/api/auth/gmail-status'), {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email }),

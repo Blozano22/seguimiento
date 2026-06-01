@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { signOut } from 'next-auth/react';
+import { api } from '@/lib/api';
 
 interface CourseRow {
   _nivel: string;
@@ -42,7 +43,7 @@ export default function AdminPage() {
   const [filterEstado, setFilterEstado] = useState('');
 
   useEffect(() => {
-    fetch('/api/admin')
+    fetch(api('/api/admin'))
       .then((r) => r.json())
       .then((d) => {
         setCourses(d.data || []);

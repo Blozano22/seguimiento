@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { ESTADOS_GESTOR } from '@/config/estados';
+import { api } from '@/lib/api';
 import type { EstadoOption } from '@/types';
 
 interface Curso {
@@ -92,7 +93,7 @@ export default function GestorPage() {
   const [error, setError] = useState('');
 
   const load = async () => {
-    const res = await fetch('/api/my-courses').then(r => r.json());
+    const res = await fetch(api('/api/my-courses')).then(r => r.json());
     setCursos(res.data || []);
     setLoading(false);
   };
@@ -104,7 +105,7 @@ export default function GestorPage() {
     setSaving(true);
     setError('');
     try {
-      const res = await fetch('/api/update', {
+      const res = await fetch(api('/api/update'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

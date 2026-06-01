@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import personas from '@/config/personas.json';
+import { api } from '@/lib/api';
 
 interface Curso {
   _nivel: string;
@@ -51,7 +52,7 @@ export default function CoordinadorDIPage() {
   const [messages, setMessages] = useState<{ id: string; type: 'success' | 'error'; text: string }[]>([]);
 
   useEffect(() => {
-    fetch('/api/admin')
+    fetch(api('/api/admin'))
       .then(r => r.json())
       .then(d => { setCursos(d.data || []); setLoading(false); });
   }, []);
@@ -85,7 +86,7 @@ export default function CoordinadorDIPage() {
     if (!di) return;
     setSaving(k);
     try {
-      const res = await fetch('/api/assign-di', {
+      const res = await fetch(api('/api/assign-di'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
