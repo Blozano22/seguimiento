@@ -166,7 +166,7 @@ export default function GestorPage() {
             </div>
           </div>
           <button
-            onClick={() => signOut({ callbackUrl: '/login' })}
+            onClick={() => signOut({ callbackUrl: api('/login') })}
             className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1.5"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>

@@ -38,7 +38,7 @@ function ConnectGmailContent() {
   }, [searchParams]);
 
   const handleConnect = (email: string) => {
-    window.location.href = `/api/auth/gmail?email=${encodeURIComponent(email)}`;
+    window.location.href = `${api('/api/auth/gmail')}?email=${encodeURIComponent(email)}`;
   };
 
   const handleDisconnect = async (email: string) => {
@@ -69,13 +69,13 @@ function ConnectGmailContent() {
           </div>
           <div className="flex items-center gap-4">
             <span className="text-sm text-gray-500">{connectedCount}/{total} conectados</span>
-            <a href="/admin" className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700">
+            <a href={api('/admin')} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M11 15l-3-3m0 0l3-3m-3 3h8M3 12a9 9 0 1118 0 9 9 0 01-18 0z" />
               </svg>
               Volver al admin
             </a>
-            <button onClick={() => signOut({ callbackUrl: '/login' })} className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-600">
+            <button onClick={() => signOut({ callbackUrl: api('/login') })} className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-600">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
               </svg>
