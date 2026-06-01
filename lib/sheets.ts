@@ -67,6 +67,7 @@ const COL_ALIASES: Record<string, string[]> = {
   'Fecha fin revisión DI':       ['Fecha fin revisión DI', 'Fecha fin revision DI', 'Fecha fin revisión DI '],
   'DI responsable':              ['DI responsable', 'DI Responsable', 'DI responsable '],
   'Link':                        ['Link', 'Link ', 'Enlace', 'Enlace curso', 'link'],
+  'Link DI':                     ['Link DI', 'Link DI ', 'Link di', 'Enlace DI'],
 };
 
 function findColIdx(headers: string[], colName: string): number {
@@ -183,9 +184,9 @@ async function updateGoogleSheet(
   updatesIn: Record<string, unknown>,
   programa?: string
 ): Promise<void> {
-  // 'Link' is a local-only field — never write it to the Google Sheet
+  // Link fields are local-only — never write them to the Google Sheet
   const updates = Object.fromEntries(
-    Object.entries(updatesIn).filter(([k]) => k !== 'Link')
+    Object.entries(updatesIn).filter(([k]) => k !== 'Link' && k !== 'Link DI')
   );
   if (Object.keys(updates).length === 0) return;
   const sheetName = SHEET_MAP[nivel] || nivel;

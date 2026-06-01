@@ -10,7 +10,11 @@ export default withAuth(
     if (path === '/') {
       if (role === 'Gestor') return NextResponse.redirect(new URL('/gestor', req.url));
       if (role === 'Diseñador Instruccional') return NextResponse.redirect(new URL('/di', req.url));
-      if (role === 'Coordinador') return NextResponse.redirect(new URL('/coordinador', req.url));
+      if (role === 'Coordinador') {
+        const email = req.nextauth.token?.email as string | undefined;
+        if (email === 'coordinacion_di@americana.edu.co') return NextResponse.redirect(new URL('/coordinador-di', req.url));
+        return NextResponse.redirect(new URL('/coordinador', req.url));
+      }
       if (role === 'Super Admin') return NextResponse.redirect(new URL('/admin', req.url));
     }
 

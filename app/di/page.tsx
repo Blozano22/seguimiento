@@ -12,6 +12,7 @@ interface Curso {
   'Gestor responsable'?: string;
   'Fecha fin corrección gestor'?: string;
   'Fin Gestor'?: string;
+  'Link DI'?: string;
 }
 
 type ActionId = 'aprobado' | 'devuelto';
@@ -63,6 +64,7 @@ export default function DIPage() {
   };
 
   const gestor = (c: Curso) => String(c['Gestor responsable '] ?? c['Gestor responsable'] ?? '—').trim();
+  const getLinkDI = (c: Curso) => String(c['Link DI'] ?? '').trim();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -119,6 +121,12 @@ export default function DIPage() {
                 <div>
                   <p className="text-sm font-medium text-gray-900">{c.Asignatura}</p>
                   <p className="text-xs text-gray-400 mt-0.5">Gestor: {gestor(c)}</p>
+                  {getLinkDI(c) && (
+                    <a href={getLinkDI(c)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-violet-600 hover:text-violet-800 mt-1">
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                      Abrir enlace
+                    </a>
+                  )}
                 </div>
                 <div className="flex gap-2 shrink-0">
                   <button

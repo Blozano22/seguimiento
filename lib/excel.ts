@@ -22,6 +22,7 @@ const COL_ALIASES: Record<string, string[]> = {
   'Fecha fin revisión DI':       ['Fecha fin revisión DI', 'Fecha fin revision DI', 'Fecha fin revisión DI '],
   'DI responsable':              ['DI responsable', 'DI Responsable', 'DI responsable '],
   'Link':                        ['Link', 'Link ', 'Enlace', 'Enlace curso', 'link'],
+  'Link DI':                     ['Link DI', 'Link DI ', 'Link di', 'Enlace DI'],
 };
 
 function normalizeColName(name: string): string {

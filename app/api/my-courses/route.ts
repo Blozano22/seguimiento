@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readAllCourses } from '@/lib/sheets';
+import { mergeLinksDI } from '@/lib/course-links';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
@@ -12,7 +13,7 @@ export async function GET(req: NextRequest) {
   const name = session.user.name;
 
   try {
-    const all = await readAllCourses();
+    const all = mergeLinksDI(await readAllCourses());
 
     if (role === 'Gestor') {
       const mine = all.filter(r => {
@@ -23,7 +24,11 @@ export async function GET(req: NextRequest) {
     }
 
     if (role === 'Diseñador Instruccional') {
-      const pending = all.filter(r => String(r['Estado'] ?? '').trim() === 'En revisión');
+      const pending = all.filter(r => {
+        if (String(r['Estado'] ?? '').trim() !== 'En revisión') return false;
+        const di = String(r['DI responsable'] ?? r['DI Responsable'] ?? r['DI responsable '] ?? '').trim();
+        return di === name;
+      });
       return NextResponse.json({ data: pending });
     }
 
