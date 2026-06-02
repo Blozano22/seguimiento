@@ -24,12 +24,11 @@ export async function GET(req: NextRequest) {
     }
 
     if (role === 'Diseñador Instruccional') {
-      const pending = all.filter(r => {
-        if (String(r['Estado'] ?? '').trim() !== 'En revisión') return false;
+      const mine = all.filter(r => {
         const di = String(r['DI responsable'] ?? r['DI Responsable'] ?? r['DI responsable '] ?? '').trim();
         return di === name;
       });
-      return NextResponse.json({ data: pending });
+      return NextResponse.json({ data: mine });
     }
 
     return NextResponse.json({ data: [] });

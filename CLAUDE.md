@@ -10,73 +10,115 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 npm run dev      # Start dev server (http://localhost:3000)
 npm run build    # Production build
 npm run lint     # ESLint check
+npm install --legacy-peer-deps  # Install deps (next-auth has a nodemailer peer conflict)
 ```
 
-No test suite exists. Verify behavior by calling the API routes directly with `node` scripts using `fetch()` — never use shell `curl` with UTF-8 strings (Spanish accented characters get corrupted in the Windows terminal).
+No test suite exists. Verify behavior by calling API routes with `node` scripts using `fetch()` — never use shell `curl` with UTF-8 strings (Spanish accented characters get corrupted in the Windows terminal).
 
 ## Architecture
 
-This is a Next.js 16 App Router app that uses an Excel file (`data/cursos.xlsx`) as its live read/write database. There is no SQL database or ORM.
+Next.js 16 App Router app for tracking course virtualization at Corporación Universitaria Americana. Uses an Excel file (`data/cursos.xlsx`) as its live read/write database — no SQL or ORM.
 
-### Role-based workflow
+### Production basePath
 
-Three roles drive a state machine for course virtualization tracking:
+In production the app runs behind Nginx at `/seguimiento` (basePath in `next.config.ts`). This has three consequences throughout the codebase:
 
-- **Gestor**: records when content work starts/finishes (`inicio_contenido` → `enviado` → `corregido`)
-- **Diseñador Instruccional (DI)**: records review start/end and approval/rejection (`inicio_revision` → `aprobado` or `devuelto`)
-- **Super Admin**: view-only dashboard at `/admin`
+1. **Client-side fetch**: every `fetch('/api/...')` in a client component **must** use `fetch(api('/api/...'))` where `api()` is imported from `@/lib/api`. It prepends `NEXT_PUBLIC_BASE_PATH` (set to `/seguimiento` at build time).
+2. **Middleware redirects** (`proxy.ts`): all `NextResponse.redirect()` calls use the `redir()` helper which prepends `BASE` (`/seguimiento` in prod, `''` in dev). Do not use `new URL('/path', req.url)` directly.
+3. **SessionProvider** (`components/Providers.tsx`): passes `basePath="/seguimiento/api/auth"` so next-auth client functions (`signIn`, `signOut`) hit the right endpoints.
+4. **signOut callbackUrl**: must use `api('/login')`, not `'/login'`.
+5. **`<a href>`** tags in client components: use `href={api('/path')}`.
 
-All valid state transitions and their Excel column writes are defined in `config/estados.ts`. Each `EstadoOption.updates` maps an Excel column name to either a literal string or `'__TODAY__'` (replaced with `new Date()` in the API route).
+### Roles and routing
 
-### Excel I/O (`lib/excel.ts`)
+Five roles, each with a dedicated page. The middleware (`proxy.ts`) handles role→page routing on `/` and protects role-specific routes:
 
-The xlsx package is marked as a `serverExternalPackage` in `next.config.ts` so it runs only server-side.
+| Role | Page | What they do |
+|---|---|---|
+| Gestor | `/gestor` | Record content start/finish/correction |
+| Diseñador Instruccional (DI) | `/di` | Approve or return courses assigned to them |
+| Coordinador GC (`coordinador`) | `/coordinador` | Assign Gestores + link to new courses |
+| Coordinador DI (`kararamirez`) | `/coordinador-di` | Assign DIs + link to courses in revision |
+| Super Admin (`admin`) | `/admin` | Read-only dashboard + password management |
 
-The Excel sheets have **merged cells** for `Programa` and `Modalidad` — the actual cell value only appears on the first row of the group. `readSheet()` forward-fills these with `_programa` and `_modalidad` shadow fields on every row.
+The two Coordinador users share role `'Coordinador'` in the JWT. The middleware differentiates them by email (`coordinacion_di@americana.edu.co` → `/coordinador-di`).
 
-**Critical**: `updateCourse()` must use `readSheet()` (the `sheet_to_json` path) to locate the target row index, then map it back to the raw worksheet row as `range.s.r + 1 + logicalIdx`. Direct header-map cell scanning does not work reliably in the Next.js compiled context.
+### State machine
 
-Column name matching uses `normalizeColName()` (strips diacritics, lowercases, trims) and a `COL_ALIASES` table to handle inconsistencies like trailing spaces (`'Gestor responsable '`) and alternate names across sheets.
+Defined in `config/estados.ts`. Each `EstadoOption.updates` maps an Excel column name to a literal string or `'__TODAY__'` (replaced with `new Date()` in the API).
+
+**Gestor transitions**: `Sin iniciar` → `En proceso` → `En revisión` (and `Corrección` → `En revisión` after fixes)
+**DI transitions**: `En revisión` → `Aprobado DI` or `Corrección`
+
+### DI assignment flow
+
+The Coordinador DI assigns a specific DI to each course in revision. Only courses with `DI responsable = <DI's name>` appear in that DI's `/di` view (filtered in `/api/my-courses`). This is done via `POST /api/assign-di`.
+
+### Excel I/O (`lib/excel.ts` + `lib/sheets.ts`)
+
+The xlsx package is a `serverExternalPackage` in `next.config.ts` (server-only).
+
+Excel sheets have **merged cells** for `Programa` and `Modalidad` — `readSheet()` forward-fills these with `_programa` and `_modalidad` shadow fields.
+
+**Critical**: `updateCourse()` must use `readSheet()` (the `sheet_to_json` path) to find the target row, then map back to the raw worksheet row as `range.s.r + 1 + logicalIdx`.
+
+Column matching uses `normalizeColName()` (strips diacritics, lowercases, trims) and `COL_ALIASES` to handle inconsistencies like trailing spaces (`'Gestor responsable '`).
+
+When Google Sheets credentials are configured, `lib/sheets.ts` reads from Google Sheets and writes to both Google Sheets and local Excel. `Link` and `Link DI` columns are local-only (filtered out before Google Sheets writes).
+
+### JSON sidecar files (`data/`)
+
+Some data that doesn't fit reliably into the Excel (columns may not exist in all sheets) is stored in JSON files:
+
+- **`data/course-links.json`** — DI coordinator links, keyed by `"nivel::programa::asignatura"`. Merged into API responses via `mergeLinksDI()` from `lib/course-links.ts`.
+- **`data/passwords.json`** — bcrypt-hashed custom passwords, keyed by username. Read by `lib/passwords.ts`. Falls back to env var (`PASS_<USERNAME>`) then default `'americana2025'`.
 
 ### API routes
 
 | Route | Purpose |
 |---|---|
 | `GET /api/data` | Dropdown data — `?type=gestores\|dis\|programas\|cursos&nivel=X&programa=Y` |
-| `GET /api/course-info` | Current state of one course — `?nivel=X&programa=Y&asignatura=Z` |
-| `POST /api/update` | Apply a state transition — body: `{rol, responsable, nivel, programa, curso, estadoId}` |
-| `POST /api/send-email` | Send notification emails via nodemailer |
-| `GET /api/admin` | All courses across all sheets for the admin dashboard |
+| `GET /api/course-info` | Current state of one course |
+| `POST /api/update` | Apply a state transition |
+| `POST /api/send-email` | Send notification emails |
+| `GET /api/admin` | All courses across all sheets (includes merged Link DI data) |
+| `GET /api/my-courses` | Role-filtered courses (Gestor: assigned to them; DI: assigned to them + En revisión) |
+| `POST /api/assign` | Coordinador GC assigns Gestor + link |
+| `POST /api/assign-di` | Coordinador DI assigns DI + link (writes to course-links.json) |
+| `GET/POST /api/admin/passwords` | List users / change passwords (Super Admin only) |
 
-### UI (`components/`)
+### Authentication (`lib/auth.ts` + `lib/passwords.ts`)
 
-`FormWizard.tsx` is the root client component. It owns all form state and orchestrates three steps:
-
-1. **InformacionStep** — role/person/nivel/programa/curso dropdowns (cascading fetches)
-2. **EstadoStep** — radio-card selection from `ESTADOS_GESTOR` or `ESTADOS_DI`
-3. **ConfirmarStep** — summary + email recipients + optional message
-
-On confirm, the wizard calls `/api/update` first, then `/api/send-email` if there are recipients. Super Admin selection on step 1 redirects directly to `/admin` instead of advancing the wizard.
-
-### Cascading dropdowns (`components/steps/InformacionStep.tsx`)
-
-`InformacionStep` uses three `useEffect` hooks that fetch from `/api/data` whenever upstream form state changes: rol → responsables list, nivel → programas list, programa → cursos list. All selections are controlled by `FormState` in `FormWizard` — resetting a parent field clears the children (e.g., changing nivel wipes programa and curso). This means testing the UI via vanilla JS requires triggering React's internal fiber onChange, not just native DOM events.
-
-### Personnel (`config/personas.json`)
-
-Source of truth for Gestor and DI names and email addresses. `NEXT_PUBLIC_MY_EMAIL` in `.env.local` is the logged-in user's address for the "send copy to me" checkbox.
+NextAuth v4 Credentials provider. Password check order: `data/passwords.json` (bcrypt) → env var `PASS_<USERNAME>` → default `'americana2025'`. JWT callbacks store `role` and `email` on the token. Users defined in `config/users.ts`.
 
 ### Email (`lib/email.ts`)
 
-Reads `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_SECURE` from env. If `SMTP_USER` or `SMTP_PASS` are empty, email is silently skipped (the update still succeeds).
+Three-tier send strategy: Google DWD (domain-wide delegation) → OAuth personal token → SMTP. If no credentials configured, email is silently skipped. Notification recipients per event type are in `config/notificaciones.ts`.
 
 ### Environment variables (`.env.local`)
 
 ```env
+NEXTAUTH_URL=http://kora.americana.edu.co/seguimiento   # full URL including basePath
+NEXTAUTH_SECRET=<random-string>
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_SECURE=false
-SMTP_USER=                  # required for email; leave blank to skip
-SMTP_PASS=                  # app password, not account password
-NEXT_PUBLIC_MY_EMAIL=       # address pre-filled for "send copy to me"
+SMTP_USER=                  # leave blank to skip email
+SMTP_PASS=
+NEXT_PUBLIC_MY_EMAIL=
+# Optional: Google Sheets / Gmail API
+GOOGLE_SERVICE_ACCOUNT_EMAIL=
+GOOGLE_PRIVATE_KEY=
+GOOGLE_SHEETS_ID=
+GOOGLE_OAUTH_CLIENT_ID=
+GOOGLE_OAUTH_CLIENT_SECRET=
+```
+
+### Deployment
+
+Production runs on a Linux server behind Nginx at `kora.americana.edu.co/seguimiento`. Managed by PM2:
+
+```bash
+cd /var/www/html/seguimiento
+git pull && npm run build && pm2 restart seguimiento
 ```
