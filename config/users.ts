@@ -33,8 +33,8 @@ export const USERS: AppUser[] = [
   { username: 'diegopatino',  nombre: 'Diego Alejandro Patiño Roja',       email: 'diegopatino_adm@americana.edu.co', role: 'Diseñador Instruccional', passwordEnvKey: 'PASS_DIEGOPATINO' },
 
   // ── Coordinadoras ──────────────────────────────────────────────────────────
-  { username: 'coordinador',  nombre: 'María Escobar',   email: 'coordinacion_gc@americana.edu.co', role: 'Coordinador', passwordEnvKey: 'PASS_ASIGNADOR' },
-  { username: 'kararamirez',  nombre: 'Karina Ramirez',  email: 'coordinacion_di@americana.edu.co', role: 'Coordinador', passwordEnvKey: 'PASS_KARARAMIREZ' },
+  { username: 'maescobar',    nombre: 'María Escobar',   email: 'coordinacion_gc@americana.edu.co', role: 'Coordinador', passwordEnvKey: 'PASS_MAESCOBAR' },
+  { username: 'karamirez',   nombre: 'Karina Ramirez',  email: 'coordinacion_di@americana.edu.co', role: 'Coordinador', passwordEnvKey: 'PASS_KARAMIREZ' },
 
   // ── Super Admin ────────────────────────────────────────────────────────────
   { username: 'admin',        nombre: 'Yule',            email: 'yuleicygamero@americana.edu.co',   role: 'Super Admin', passwordEnvKey: 'PASS_ADMIN' },

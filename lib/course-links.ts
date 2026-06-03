@@ -3,7 +3,7 @@ import path from 'path';
 
 const LINKS_PATH = path.join(process.cwd(), 'data', 'course-links.json');
 
-type LinksMap = Record<string, { linkDI?: string }>;
+type LinksMap = Record<string, { linkDI?: string; linkGC?: string }>;
 
 function readLinks(): LinksMap {
   try {
@@ -29,12 +29,14 @@ export function setLinkDI(nivel: string, programa: string, asignatura: string, l
   writeLinks(data);
 }
 
-export function getLinkDI(nivel: string, programa: string, asignatura: string): string {
+export function setLinkGC(nivel: string, programa: string, asignatura: string, link: string): void {
   const data = readLinks();
-  return data[courseKey(nivel, programa, asignatura)]?.linkDI || '';
+  const k = courseKey(nivel, programa, asignatura);
+  data[k] = { ...data[k], linkGC: link };
+  writeLinks(data);
 }
 
-export function mergeLinksDI(courses: Record<string, unknown>[]): Record<string, unknown>[] {
+export function mergeLinks(courses: Record<string, unknown>[]): Record<string, unknown>[] {
   const data = readLinks();
   return courses.map(c => {
     const nivel = String(c._nivel ?? '').trim();
@@ -42,7 +44,12 @@ export function mergeLinksDI(courses: Record<string, unknown>[]): Record<string,
     const asignatura = String(c['Asignatura'] ?? '').trim();
     const k = courseKey(nivel, programa, asignatura);
     const links = data[k];
-    if (links?.linkDI) return { ...c, 'Link DI': links.linkDI };
-    return c;
+    const patched = { ...c };
+    if (links?.linkDI) patched['Link DI'] = links.linkDI;
+    if (links?.linkGC) patched['Link'] = links.linkGC;
+    return patched;
   });
 }
+
+// Keep backward compat alias
+export const mergeLinksDI = mergeLinks;

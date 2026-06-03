@@ -171,6 +171,21 @@ export default function CoordinadorDIPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-6">
+        {/* Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+          {[
+            { label: 'Por asignar', value: porAsignarTotal, color: 'text-orange-600' },
+            { label: 'Asignados', value: asignadosTotal, color: 'text-blue-600' },
+            { label: 'Devueltos', value: devueltosTotal, color: 'text-red-600' },
+            { label: 'Aprobados', value: aprobadosTotal, color: 'text-green-600' },
+          ].map(s => (
+            <div key={s.label} className="bg-white rounded-xl border border-gray-200 p-3">
+              <p className="text-xs text-gray-500 font-medium">{s.label}</p>
+              <p className={`text-xl font-bold mt-0.5 ${s.color}`}>{s.value}</p>
+            </div>
+          ))}
+        </div>
+
         {/* Toasts */}
         <div className="space-y-2 mb-4">
           {messages.slice(-3).map(m => (

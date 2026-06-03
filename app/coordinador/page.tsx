@@ -182,6 +182,22 @@ export default function CoordinadorPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-6">
+        {/* Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+          {[
+            { label: 'Total', value: cursos.length, color: 'text-gray-900' },
+            { label: 'Sin iniciar', value: cursos.filter(isSinIniciar).length, color: 'text-gray-500' },
+            { label: 'En proceso', value: cursos.filter(c => String(c.Estado ?? '').trim() === 'En proceso').length, color: 'text-blue-600' },
+            { label: 'En revisión', value: cursos.filter(c => String(c.Estado ?? '').trim() === 'En revisión').length, color: 'text-orange-600' },
+            { label: 'Aprobados', value: cursos.filter(c => { const e = String(c.Estado ?? '').trim(); return e === 'Aprobado DI' || e === 'Aprobado'; }).length, color: 'text-green-600' },
+          ].map(s => (
+            <div key={s.label} className="bg-white rounded-xl border border-gray-200 p-3">
+              <p className="text-xs text-gray-500 font-medium">{s.label}</p>
+              <p className={`text-xl font-bold mt-0.5 ${s.color}`}>{s.value}</p>
+            </div>
+          ))}
+        </div>
+
         {/* Toasts */}
         <div className="space-y-2 mb-4">
           {messages.slice(-3).map(m => (

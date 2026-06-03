@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { updateCourse } from '@/lib/sheets';
+import { setLinkGC } from '@/lib/course-links';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { sendEmail, buildEmailHtml } from '@/lib/email';
@@ -25,10 +26,13 @@ export async function POST(req: NextRequest) {
     if (!nivel || !curso || !gestor) return NextResponse.json({ error: 'Faltan campos' }, { status: 400 });
 
     const updates: Record<string, unknown> = { 'Gestor responsable': gestor };
-    if (link && link.trim()) updates['Link'] = link.trim();
 
     const ok = await updateCourse(nivel, curso, updates, programa);
     if (!ok) return NextResponse.json({ error: 'Curso no encontrado' }, { status: 404 });
+
+    if (link && link.trim()) {
+      setLinkGC(nivel, programa, curso, link.trim());
+    }
 
     // FROM: el correo del coordinador que hizo la asignación
     const coordUser = USERS.find(u => u.nombre === user?.name);
