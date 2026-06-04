@@ -38,11 +38,13 @@ function sortPriorityAZ(list: CourseRow[]): CourseRow[] {
 interface UserInfo {
   username: string;
   nombre: string;
+  email: string;
   role: string;
+  active: boolean;
   hasCustomPassword: boolean;
 }
 
-type TabId = 'dashboard' | 'passwords';
+type TabId = 'dashboard' | 'usuarios';
 
 const STATE_COLORS: Record<string, string> = {
   'En proceso': 'bg-blue-100 text-blue-700',
@@ -77,22 +79,23 @@ export default function AdminPage() {
   const [filterNivel, setFilterNivel] = useState('');
   const [filterEstado, setFilterEstado] = useState('');
 
-  // Passwords
+  // Users management
   const [users, setUsers] = useState<UserInfo[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [usersLoaded, setUsersLoaded] = useState(false);
-  const [passwordInputs, setPasswordInputs] = useState<Record<string, string>>({});
-  const [savingPassword, setSavingPassword] = useState<string | null>(null);
-  const [passwordMsg, setPasswordMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [confirmAdmin, setConfirmAdmin] = useState<string | null>(null);
   const [searchUser, setSearchUser] = useState('');
+  const [userMsg, setUserMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [saving, setSaving] = useState<string | null>(null);
+  const [editingUser, setEditingUser] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<{ nombre: string; email: string; role: string }>({ nombre: '', email: '', role: '' });
+  const [passwordInputs, setPasswordInputs] = useState<Record<string, string>>({});
+  const [confirmAction, setConfirmAction] = useState<{ type: string; username: string; label: string } | null>(null);
+  const [showAddUser, setShowAddUser] = useState(false);
+  const [newUser, setNewUser] = useState({ username: '', nombre: '', email: '', role: 'Gestor' });
 
   useEffect(() => {
     fetch(api('/api/admin'))
-      .then(r => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.json();
-      })
+      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
       .then(d => { setCourses(d.data || []); setLoading(false); })
       .catch(err => { setFetchError(err.message || 'Error'); setLoading(false); });
   }, []);
@@ -100,32 +103,25 @@ export default function AdminPage() {
   const loadUsers = () => {
     if (usersLoaded) return;
     setLoadingUsers(true);
-    fetch(api('/api/admin/passwords'))
+    fetch(api('/api/admin/users'))
       .then(r => r.json())
       .then(d => { setUsers(d.users || []); setLoadingUsers(false); setUsersLoaded(true); })
       .catch(() => setLoadingUsers(false));
   };
+  const reloadUsers = () => { setUsersLoaded(false); setLoadingUsers(true); fetch(api('/api/admin/users')).then(r => r.json()).then(d => { setUsers(d.users || []); setLoadingUsers(false); setUsersLoaded(true); }); };
 
-  async function handleChangePassword(username: string, newPassword: string) {
-    setSavingPassword(username);
-    setPasswordMsg(null);
+  async function userAction(body: Record<string, unknown>, successMsg: string) {
+    setSaving(String(body.username || ''));
+    setUserMsg(null);
     try {
-      const res = await fetch(api('/api/admin/passwords'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, newPassword }),
-      });
+      const res = await fetch(api('/api/admin/users'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      const user = users.find(u => u.username === username);
-      setPasswordMsg({ type: 'success', text: `Contraseña de "${user?.nombre || username}" cambiada exitosamente` });
-      setPasswordInputs(p => { const n = { ...p }; delete n[username]; return n; });
-      setUsers(prev => prev.map(u => u.username === username ? { ...u, hasCustomPassword: true } : u));
+      setUserMsg({ type: 'success', text: successMsg });
+      reloadUsers();
     } catch (err) {
-      setPasswordMsg({ type: 'error', text: err instanceof Error ? err.message : 'Error al cambiar contraseña' });
-    } finally {
-      setSavingPassword(null);
-    }
+      setUserMsg({ type: 'error', text: err instanceof Error ? err.message : 'Error' });
+    } finally { setSaving(null); }
   }
 
   const filtered = sortPriorityAZ(courses.filter(c => {
@@ -198,13 +194,14 @@ export default function AdminPage() {
               </span>
             </button>
             <button
-              onClick={() => { setActiveTab('passwords'); loadUsers(); }}
+              onClick={() => { setActiveTab('usuarios'); loadUsers(); }}
               className={`flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${
-                activeTab === 'passwords' ? 'border-amber-500 text-amber-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                activeTab === 'usuarios' ? 'border-amber-500 text-amber-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-              Contraseñas
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+              Usuarios
+              <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${activeTab === 'usuarios' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500'}`}>{users.length || ''}</span>
             </button>
           </div>
         </div>
@@ -292,28 +289,46 @@ export default function AdminPage() {
           </>
         )}
 
-        {/* ── TAB: CONTRASEÑAS ── */}
-        {activeTab === 'passwords' && (
+        {/* ── TAB: USUARIOS ── */}
+        {activeTab === 'usuarios' && (
           <>
-            {passwordMsg && (
-              <div className={`mb-4 p-3 rounded-xl border text-sm flex items-center gap-2 ${passwordMsg.type === 'success' ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
-                {passwordMsg.type === 'success' && (
-                  <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                )}
-                {passwordMsg.text}
-                <button onClick={() => setPasswordMsg(null)} className="ml-auto opacity-60 hover:opacity-100">&times;</button>
+            {userMsg && (
+              <div className={`mb-4 p-3 rounded-xl border text-sm flex items-center gap-2 ${userMsg.type === 'success' ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
+                {userMsg.type === 'success' && <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+                {userMsg.text}
+                <button onClick={() => setUserMsg(null)} className="ml-auto opacity-60 hover:opacity-100">&times;</button>
               </div>
             )}
 
-            <div className="bg-white rounded-xl border border-gray-200 p-4 mb-4">
-              <input
-                type="text"
-                placeholder="Buscar usuario por nombre, usuario o rol..."
-                value={searchUser}
-                onChange={e => setSearchUser(e.target.value)}
-                className="w-full max-w-md px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
-              />
+            <div className="bg-white rounded-xl border border-gray-200 p-4 mb-4 flex flex-wrap gap-3 items-center">
+              <input type="text" placeholder="Buscar usuario..." value={searchUser} onChange={e => setSearchUser(e.target.value)} className="flex-1 min-w-[200px] px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+              <button onClick={() => setShowAddUser(!showAddUser)} className="px-4 py-2 text-xs font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-1.5">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+                Nuevo usuario
+              </button>
             </div>
+
+            {/* Add user form */}
+            {showAddUser && (
+              <div className="bg-indigo-50 rounded-xl border border-indigo-200 p-4 mb-4">
+                <h3 className="text-sm font-semibold text-indigo-900 mb-3">Crear nuevo usuario</h3>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                  <input type="text" placeholder="Usuario (login)" value={newUser.username} onChange={e => setNewUser(n => ({ ...n, username: e.target.value }))} className="px-3 py-2 text-sm border border-indigo-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                  <input type="text" placeholder="Nombre completo" value={newUser.nombre} onChange={e => setNewUser(n => ({ ...n, nombre: e.target.value }))} className="px-3 py-2 text-sm border border-indigo-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                  <input type="email" placeholder="Email" value={newUser.email} onChange={e => setNewUser(n => ({ ...n, email: e.target.value }))} className="px-3 py-2 text-sm border border-indigo-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                  <select value={newUser.role} onChange={e => setNewUser(n => ({ ...n, role: e.target.value }))} className="px-3 py-2 text-sm border border-indigo-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                    <option value="Gestor">Gestor</option>
+                    <option value="Diseñador Instruccional">Diseñador Instruccional</option>
+                    <option value="Coordinador">Coordinador</option>
+                    <option value="Super Admin">Super Admin</option>
+                  </select>
+                </div>
+                <div className="flex gap-2 mt-3">
+                  <button onClick={() => { if (!newUser.username || !newUser.nombre || !newUser.email) { setUserMsg({ type: 'error', text: 'Completa todos los campos' }); return; } userAction({ action: 'create', ...newUser }, `Usuario "${newUser.username}" creado`); setNewUser({ username: '', nombre: '', email: '', role: 'Gestor' }); setShowAddUser(false); }} className="px-4 py-2 text-xs font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Crear</button>
+                  <button onClick={() => setShowAddUser(false)} className="px-4 py-2 text-xs text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50">Cancelar</button>
+                </div>
+              </div>
+            )}
 
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
               {loadingUsers ? (
@@ -323,51 +338,53 @@ export default function AdminPage() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-gray-100 bg-gray-50">
-                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Usuario</th>
-                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Nombre</th>
-                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Rol</th>
-                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Estado</th>
-                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase min-w-[300px]">Nueva contraseña</th>
+                        <th className="text-left px-3 py-3 text-xs font-semibold text-gray-500 uppercase">Usuario</th>
+                        <th className="text-left px-3 py-3 text-xs font-semibold text-gray-500 uppercase">Nombre</th>
+                        <th className="text-left px-3 py-3 text-xs font-semibold text-gray-500 uppercase">Email</th>
+                        <th className="text-left px-3 py-3 text-xs font-semibold text-gray-500 uppercase">Rol</th>
+                        <th className="text-left px-3 py-3 text-xs font-semibold text-gray-500 uppercase">Contraseña</th>
+                        <th className="text-left px-3 py-3 text-xs font-semibold text-gray-500 uppercase">Acciones</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredUsers.map(u => {
+                      {users.filter(u => { const q = searchUser.toLowerCase(); return !q || u.username.toLowerCase().includes(q) || u.nombre.toLowerCase().includes(q) || u.role.toLowerCase().includes(q); }).map(u => {
                         const isAdmin = u.role === 'Super Admin';
-                        const inputVal = passwordInputs[u.username] || '';
+                        const isEditing = editingUser === u.username;
+                        const pwdVal = passwordInputs[u.username] || '';
                         return (
-                          <tr key={u.username} className={`border-b border-gray-50 hover:bg-gray-50 ${isAdmin ? 'bg-amber-50/50' : ''}`}>
-                            <td className="px-4 py-3.5 font-mono text-xs text-gray-700">{u.username}</td>
-                            <td className="px-4 py-3.5 text-gray-900 font-medium">{u.nombre}</td>
-                            <td className="px-4 py-3.5">
-                              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${ROLE_COLORS[u.role] || 'bg-gray-100 text-gray-600'}`}>{u.role}</span>
+                          <tr key={u.username} className={`border-b border-gray-50 ${!u.active ? 'opacity-50 bg-gray-50' : isAdmin ? 'bg-amber-50/30' : 'hover:bg-gray-50'}`}>
+                            <td className="px-3 py-3 font-mono text-xs text-gray-700">{u.username}</td>
+                            <td className="px-3 py-3">{isEditing ? <input type="text" value={editForm.nombre} onChange={e => setEditForm(f => ({ ...f, nombre: e.target.value }))} className="w-full px-2 py-1 text-sm border border-amber-300 rounded-lg" /> : <span className="text-gray-900 font-medium">{u.nombre}</span>}</td>
+                            <td className="px-3 py-3">{isEditing ? <input type="email" value={editForm.email} onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))} className="w-full px-2 py-1 text-sm border border-amber-300 rounded-lg" /> : <span className="text-xs text-gray-500">{u.email}</span>}</td>
+                            <td className="px-3 py-3">{isEditing ? (
+                              <select value={editForm.role} onChange={e => setEditForm(f => ({ ...f, role: e.target.value }))} className="px-2 py-1 text-xs border border-amber-300 rounded-lg bg-white">
+                                <option value="Gestor">Gestor</option><option value="Diseñador Instruccional">DI</option><option value="Coordinador">Coordinador</option><option value="Super Admin">Super Admin</option>
+                              </select>
+                            ) : <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${ROLE_COLORS[u.role] || 'bg-gray-100 text-gray-600'}`}>{u.role}</span>}</td>
+                            <td className="px-3 py-3">
+                              <div className="flex gap-1">
+                                <input type="text" placeholder="Nueva..." value={pwdVal} onChange={e => setPasswordInputs(p => ({ ...p, [u.username]: e.target.value }))} className="w-24 px-2 py-1 text-xs border border-gray-200 rounded-lg" />
+                                <button onClick={() => { if (!pwdVal || pwdVal.length < 6) { setUserMsg({ type: 'error', text: 'Min. 6 caracteres' }); return; } if (isAdmin) { setConfirmAction({ type: 'password', username: u.username, label: 'Cambiar contraseña del Admin' }); } else { userAction({ action: 'password', username: u.username, newPassword: pwdVal }, `Contraseña de "${u.nombre}" cambiada`); setPasswordInputs(p => { const n = { ...p }; delete n[u.username]; return n; }); } }} disabled={!pwdVal || saving === u.username} className="px-2 py-1 text-[10px] font-semibold bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-40 shrink-0">{saving === u.username ? '...' : 'Ok'}</button>
+                              </div>
                             </td>
-                            <td className="px-4 py-3.5">
-                              {u.hasCustomPassword
-                                ? <span className="inline-flex items-center gap-1 text-xs text-green-600 font-medium"><svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>Personalizada</span>
-                                : <span className="text-xs text-gray-400">Por defecto</span>
-                              }
-                            </td>
-                            <td className="px-4 py-3.5">
-                              <div className="flex gap-2">
-                                <input
-                                  type="text"
-                                  placeholder="Min. 6 caracteres..."
-                                  value={inputVal}
-                                  onChange={e => setPasswordInputs(p => ({ ...p, [u.username]: e.target.value }))}
-                                  className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
-                                />
-                                <button
-                                  onClick={() => {
-                                    if (!inputVal || inputVal.length < 6) { setPasswordMsg({ type: 'error', text: 'La contraseña debe tener al menos 6 caracteres' }); return; }
-                                    if (isAdmin) { setConfirmAdmin(u.username); } else { handleChangePassword(u.username, inputVal); }
-                                  }}
-                                  disabled={!inputVal || savingPassword === u.username}
-                                  className={`px-4 py-2 text-xs font-semibold rounded-lg text-white disabled:opacity-40 disabled:cursor-not-allowed shrink-0 transition ${
-                                    isAdmin ? 'bg-amber-500 hover:bg-amber-600' : 'bg-indigo-600 hover:bg-indigo-700'
-                                  }`}
-                                >
-                                  {savingPassword === u.username ? 'Guardando...' : 'Cambiar'}
-                                </button>
+                            <td className="px-3 py-3">
+                              <div className="flex gap-1.5">
+                                {isEditing ? (
+                                  <>
+                                    <button onClick={() => { userAction({ action: 'update', username: u.username, ...editForm }, `"${u.username}" actualizado`); setEditingUser(null); }} className="px-2 py-1 text-[10px] font-semibold bg-green-600 text-white rounded-lg hover:bg-green-700">Guardar</button>
+                                    <button onClick={() => setEditingUser(null)} className="px-2 py-1 text-[10px] text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50">X</button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <button onClick={() => { setEditingUser(u.username); setEditForm({ nombre: u.nombre, email: u.email, role: u.role }); }} className="px-2 py-1 text-[10px] font-semibold bg-amber-500 text-white rounded-lg hover:bg-amber-600" title="Editar">Editar</button>
+                                    {!isAdmin && (
+                                      <>
+                                        <button onClick={() => setConfirmAction({ type: 'toggle', username: u.username, label: u.active ? `Suspender a "${u.nombre}"` : `Reactivar a "${u.nombre}"` })} className={`px-2 py-1 text-[10px] font-semibold rounded-lg ${u.active ? 'bg-orange-100 text-orange-700 hover:bg-orange-200' : 'bg-green-100 text-green-700 hover:bg-green-200'}`}>{u.active ? 'Suspender' : 'Activar'}</button>
+                                        <button onClick={() => setConfirmAction({ type: 'delete', username: u.username, label: `Eliminar a "${u.nombre}" permanentemente` })} className="px-2 py-1 text-[10px] font-semibold bg-red-100 text-red-700 rounded-lg hover:bg-red-200">Eliminar</button>
+                                      </>
+                                    )}
+                                  </>
+                                )}
                               </div>
                             </td>
                           </tr>
@@ -382,31 +399,27 @@ export default function AdminPage() {
         )}
       </main>
 
-      {/* Admin confirm modal */}
-      {confirmAdmin && (
+      {/* Confirm modal */}
+      {confirmAction && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
-                <svg className="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                </svg>
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${confirmAction.type === 'delete' ? 'bg-red-100' : 'bg-amber-100'}`}>
+                <svg className={`w-5 h-5 ${confirmAction.type === 'delete' ? 'text-red-600' : 'text-amber-600'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>
               </div>
-              <div>
-                <h3 className="font-bold text-gray-900">Cambiar contraseña de Admin</h3>
-                <p className="text-xs text-gray-500">Esta acción cambiará tu propia contraseña</p>
-              </div>
+              <h3 className="font-bold text-gray-900">{confirmAction.label}</h3>
             </div>
-            <p className="text-sm text-gray-600 mb-6">
-              Estás a punto de cambiar la contraseña del <strong>Super Admin</strong>. Asegúrate de recordar la nueva contraseña, de lo contrario no podrás acceder al panel.
-            </p>
+            <p className="text-sm text-gray-600 mb-6">Esta acción no se puede deshacer fácilmente. ¿Estás seguro?</p>
             <div className="flex gap-2">
-              <button onClick={() => setConfirmAdmin(null)} className="flex-1 py-2.5 text-sm border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50">Cancelar</button>
-              <button
-                onClick={() => { const pwd = passwordInputs[confirmAdmin] || ''; setConfirmAdmin(null); handleChangePassword(confirmAdmin, pwd); }}
-                className="flex-1 py-2.5 text-sm font-semibold rounded-xl text-white bg-amber-500 hover:bg-amber-600"
-              >
-                Sí, cambiar
+              <button onClick={() => setConfirmAction(null)} className="flex-1 py-2.5 text-sm border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50">Cancelar</button>
+              <button onClick={() => {
+                const { type, username } = confirmAction;
+                setConfirmAction(null);
+                if (type === 'toggle') userAction({ action: 'toggle', username }, 'Estado actualizado');
+                if (type === 'delete') userAction({ action: 'delete', username }, 'Usuario eliminado');
+                if (type === 'password') { const pwd = passwordInputs[username] || ''; userAction({ action: 'password', username, newPassword: pwd }, 'Contraseña cambiada'); setPasswordInputs(p => { const n = { ...p }; delete n[username]; return n; }); }
+              }} className={`flex-1 py-2.5 text-sm font-semibold rounded-xl text-white ${confirmAction.type === 'delete' ? 'bg-red-600 hover:bg-red-700' : 'bg-amber-500 hover:bg-amber-600'}`}>
+                Confirmar
               </button>
             </div>
           </div>

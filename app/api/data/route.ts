@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getProgramas, getCursos } from '@/lib/sheets';
-import personas from '@/config/personas.json';
+import { getGestores, getDIs } from '@/lib/user-management';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -10,10 +10,10 @@ export async function GET(req: NextRequest) {
 
   try {
     if (type === 'gestores') {
-      return NextResponse.json({ data: personas.gestores.map(g => g.nombre) });
+      return NextResponse.json({ data: getGestores().map(g => g.nombre) });
     }
     if (type === 'dis') {
-      return NextResponse.json({ data: personas.dis.map(d => d.nombre) });
+      return NextResponse.json({ data: getDIs().map(d => d.nombre) });
     }
     if (type === 'programas' && nivel) {
       const data = await getProgramas(nivel);

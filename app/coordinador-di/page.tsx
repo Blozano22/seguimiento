@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useSession, signOut } from 'next-auth/react';
-import personas from '@/config/personas.json';
 import { api } from '@/lib/api';
 
 interface Curso {
@@ -115,7 +114,10 @@ export default function CoordinadorDIPage() {
   };
 
   const niveles = ['Pregrado', 'Especializaciones', 'Maestrías', 'Doctorado'];
-  const dis = personas.dis.map((d: { nombre: string }) => d.nombre);
+  const [dis, setDis] = useState<string[]>([]);
+  useEffect(() => {
+    fetch(api('/api/data?type=dis')).then(r => r.json()).then(d => setDis(d.data || []));
+  }, []);
 
   const tabs: { id: TabId; label: string; count: number; color: string; activeColor: string }[] = [
     { id: 'por_asignar', label: 'Por asignar', count: porAsignarTotal, color: 'bg-orange-100 text-orange-700', activeColor: 'border-orange-500 text-orange-600' },

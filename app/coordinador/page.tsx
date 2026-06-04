@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useSession, signOut } from 'next-auth/react';
-import personas from '@/config/personas.json';
 import { api } from '@/lib/api';
 
 interface Curso {
@@ -116,7 +115,10 @@ export default function CoordinadorPage() {
   };
 
   const niveles = ['Pregrado', 'Especializaciones', 'Maestrías', 'Doctorado'];
-  const gestores = personas.gestores.map((g: { nombre: string }) => g.nombre);
+  const [gestores, setGestores] = useState<string[]>([]);
+  useEffect(() => {
+    fetch(api('/api/data?type=gestores')).then(r => r.json()).then(d => setGestores(d.data || []));
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">

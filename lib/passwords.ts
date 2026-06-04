@@ -19,18 +19,16 @@ function writePasswords(data: PasswordMap): void {
   fs.writeFileSync(PASSWORDS_PATH, JSON.stringify(data, null, 2), 'utf-8');
 }
 
-export async function verifyPassword(username: string, password: string, envKey: string): Promise<boolean> {
+export async function verifyPassword(username: string, password: string): Promise<boolean> {
   const passwords = readPasswords();
   const hash = passwords[username];
 
-  // If there's a custom password set, check against it
   if (hash) {
     return bcrypt.compare(password, hash);
   }
 
-  // Fallback: env var or default
-  const expected = process.env[envKey] || 'americana2025';
-  return password === expected;
+  // Fallback: default password
+  return password === 'americana2025';
 }
 
 export async function setPassword(username: string, newPassword: string): Promise<void> {

@@ -5,8 +5,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { sendEmail, buildEmailHtml } from '@/lib/email';
 import { NOTIF_BASE } from '@/config/notificaciones';
-import personas from '@/config/personas.json';
-import { USERS } from '@/config/users';
+import { getDIs, getAllUsers } from '@/lib/user-management';
 
 function todayString(): string {
   const d = new Date();
@@ -34,10 +33,10 @@ export async function POST(req: NextRequest) {
       setLinkDI(nivel, programa, curso, link.trim());
     }
 
-    const coordUser = USERS.find(u => u.nombre === user?.name);
+    const coordUser = getAllUsers().find(u => u.nombre === user?.name);
     const fromEmail = coordUser?.email || user?.email;
 
-    const diEmail = personas.dis.find(d => d.nombre === di)?.email;
+    const diEmail = getDIs().find(d => d.nombre === di)?.email;
     const recipients = [...(NOTIF_BASE.asignacion_di || []), ...(diEmail ? [diEmail] : [])]
       .filter(email => email !== fromEmail);
 

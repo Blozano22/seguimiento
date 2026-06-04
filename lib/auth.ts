@@ -1,6 +1,6 @@
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { NextAuthOptions } from 'next-auth';
-import { getUserByUsername } from '@/config/users';
+import { getUserByUsername } from '@/lib/user-management';
 import { verifyPassword } from '@/lib/passwords';
 
 export const authOptions: NextAuthOptions = {
@@ -15,7 +15,7 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.username || !credentials?.password) return null;
         const user = getUserByUsername(credentials.username.trim().toLowerCase());
         if (!user) return null;
-        const valid = await verifyPassword(user.username, credentials.password, user.passwordEnvKey);
+        const valid = await verifyPassword(user.username, credentials.password);
         if (!valid) return null;
         return {
           id: user.username,

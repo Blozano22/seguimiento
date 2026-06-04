@@ -3,7 +3,7 @@ import { updateCourse, getCourseInfo } from '@/lib/sheets';
 import { ESTADOS_GESTOR, ESTADOS_DI } from '@/config/estados';
 import { sendEmail, buildEmailHtml } from '@/lib/email';
 import { NOTIF_BASE } from '@/config/notificaciones';
-import personas from '@/config/personas.json';
+import { getGestores, getDIs } from '@/lib/user-management';
 
 function todayString(): string {
   const d = new Date();
@@ -16,8 +16,8 @@ function lookupEmail(list: { nombre: string; email: string }[], nombre: string):
 
 // Busca el email de un responsable en gestores o DIs
 function resolveFromEmail(responsable: string, rol: string): string | undefined {
-  if (rol === 'Gestor') return lookupEmail(personas.gestores, responsable);
-  if (rol === 'Diseñador Instruccional') return lookupEmail(personas.dis, responsable);
+  if (rol === 'Gestor') return lookupEmail(getGestores(), responsable);
+  if (rol === 'Diseñador Instruccional') return lookupEmail(getDIs(), responsable);
   return undefined;
 }
 
@@ -64,11 +64,11 @@ export async function POST(req: NextRequest) {
 
       const recipients = [...baseRecipients];
       if (estadoId === 'corregido') {
-        const diEmail = lookupEmail(personas.dis, diNombre || responsable);
+        const diEmail = lookupEmail(getDIs(), diNombre || responsable);
         if (diEmail) recipients.push(diEmail);
       }
       if (estadoId === 'aprobado' || estadoId === 'devuelto') {
-        const gestorEmail = lookupEmail(personas.gestores, gestorNombre);
+        const gestorEmail = lookupEmail(getGestores(), gestorNombre);
         if (gestorEmail) recipients.push(gestorEmail);
       }
 
