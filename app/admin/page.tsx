@@ -17,6 +17,22 @@ interface CourseRow {
   'Fin Gestor'?: string;
   'Fecha inicio revisión DI'?: string;
   'Fecha fin revisión DI'?: string;
+  Prioridad?: string;
+  PRIORIDAD?: string;
+}
+
+function isPriority(c: CourseRow): boolean {
+  const val = String(c['Prioridad'] ?? c['PRIORIDAD'] ?? '').trim();
+  return val !== '' && val !== '0' && val.toUpperCase() !== 'NO' && val !== 'null';
+}
+
+function sortPriorityAZ(list: CourseRow[]): CourseRow[] {
+  return [...list].sort((a, b) => {
+    const pa = isPriority(a) ? 0 : 1;
+    const pb = isPriority(b) ? 0 : 1;
+    if (pa !== pb) return pa - pb;
+    return String(a.Asignatura ?? '').localeCompare(String(b.Asignatura ?? ''), 'es');
+  });
 }
 
 interface UserInfo {
@@ -112,11 +128,11 @@ export default function AdminPage() {
     }
   }
 
-  const filtered = courses.filter(c => {
+  const filtered = sortPriorityAZ(courses.filter(c => {
     const q = search.toLowerCase();
     const matchSearch = !search || String(c.Asignatura || '').toLowerCase().includes(q) || String(c._programa || '').toLowerCase().includes(q);
     return matchSearch && (!filterNivel || c._nivel === filterNivel) && (!filterEstado || c.Estado === filterEstado);
-  });
+  }));
 
   const gestor = (c: CourseRow) => (c['Gestor responsable '] || c['Gestor responsable'] || '—').toString().trim();
 
@@ -250,7 +266,12 @@ export default function AdminPage() {
                         <tr key={i} className="border-b border-gray-50 hover:bg-gray-50">
                           <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">{c._nivel}</td>
                           <td className="px-4 py-3 text-xs text-gray-600 max-w-[180px] truncate">{c._programa}</td>
-                          <td className="px-4 py-3 font-medium text-gray-900 max-w-[200px] truncate">{String(c.Asignatura)}</td>
+                          <td className="px-4 py-3 max-w-[250px]">
+                            <div className="flex items-center gap-1.5">
+                              {isPriority(c) && <span className="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-500 text-white uppercase tracking-wide">Prioridad</span>}
+                              <span className="font-medium text-gray-900 truncate">{String(c.Asignatura)}</span>
+                            </div>
+                          </td>
                           <td className="px-4 py-3 whitespace-nowrap">{c.Estado ? <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATE_COLORS[c.Estado] || 'bg-gray-100 text-gray-600'}`}>{c.Estado}</span> : '—'}</td>
                           <td className="px-4 py-3 whitespace-nowrap">{c['Estado curso'] ? <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATE_COLORS[c['Estado curso']] || 'bg-gray-100 text-gray-600'}`}>{c['Estado curso']}</span> : '—'}</td>
                           <td className="px-4 py-3 text-xs text-gray-600 whitespace-nowrap">{gestor(c)}</td>
