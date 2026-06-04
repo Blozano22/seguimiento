@@ -5,7 +5,7 @@ function hasGoogleCredentials(): boolean {
   return !!(process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && process.env.GOOGLE_PRIVATE_KEY);
 }
 
-const SPREADSHEET_ID = process.env.GOOGLE_SHEETS_ID || '1AlzuwCaOWCPs-NLPqd85Nng9ZwDvesdC-j85Ly5jras';
+const SPREADSHEET_ID = process.env.GOOGLE_SHEETS_ID || '1oGq9zDPgw1wCcdeb419d-9hr6I_R4aVOtUwtRk_1zvI';
 
 const SHEET_MAP: Record<string, string> = {
   Pregrado: 'Pregrado',
