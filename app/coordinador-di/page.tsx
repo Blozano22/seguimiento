@@ -66,14 +66,15 @@ export default function CoordinadorDIPage() {
     return true;
   });
 
+  const sortAZ = (l: Curso[]) => [...l].sort((a, b) => String(a.Asignatura ?? '').localeCompare(String(b.Asignatura ?? ''), 'es'));
   const enRevision = cursos.filter(c => String(c.Estado ?? '').trim() === 'En revisión');
-  const porAsignar = applyFilters(enRevision.filter(c => !diActual(c)));
-  const asignados = applyFilters(enRevision.filter(c => !!diActual(c)));
-  const devueltos = applyFilters(cursos.filter(c => String(c.Estado ?? '').trim() === 'Corrección'));
-  const aprobados = applyFilters(cursos.filter(c => {
+  const porAsignar = sortAZ(applyFilters(enRevision.filter(c => !diActual(c))));
+  const asignados = sortAZ(applyFilters(enRevision.filter(c => !!diActual(c))));
+  const devueltos = sortAZ(applyFilters(cursos.filter(c => String(c.Estado ?? '').trim() === 'Corrección')));
+  const aprobados = sortAZ(applyFilters(cursos.filter(c => {
     const e = String(c.Estado ?? '').trim();
     return e === 'Aprobado DI' || e === 'Aprobado';
-  }));
+  })));
 
   const porAsignarTotal = enRevision.filter(c => !diActual(c)).length;
   const asignadosTotal = enRevision.filter(c => !!diActual(c)).length;

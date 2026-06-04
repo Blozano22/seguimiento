@@ -13,6 +13,7 @@ interface Curso {
   Estado?: string;
   Semestre?: string;
   Link?: string;
+  'Link DI'?: string;
   Prioridad?: string;
   PRIORIDAD?: string;
   'Inicio Gestor'?: string;
@@ -143,9 +144,12 @@ export default function GestorPage() {
     ? cursos
     : cursos.filter(c => estadoTab(c.Estado) === activeTab);
 
+  const sortAZ = (list: Curso[]) => [...list].sort((a, b) =>
+    String(a.Asignatura ?? '').localeCompare(String(b.Asignatura ?? ''), 'es')
+  );
   const visible = [
-    ...filtered.filter(isPriority),
-    ...filtered.filter(c => !isPriority(c)),
+    ...sortAZ(filtered.filter(isPriority)),
+    ...sortAZ(filtered.filter(c => !isPriority(c))),
   ];
 
   return (
@@ -248,6 +252,7 @@ export default function GestorPage() {
             const estadoActual = String(curso.Estado ?? '').trim();
             const opciones = getOpcionesGestor(tab);
             const linkCurso = String(curso.Link ?? '').trim();
+            const linkDI = String(curso['Link DI'] ?? '').trim();
 
             return (
               <div
@@ -267,17 +272,15 @@ export default function GestorPage() {
                       )}
                       <p className="font-semibold text-gray-900">{curso.Asignatura}</p>
                       {linkCurso && (
-                        <a
-                          href={linkCurso}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 font-medium"
-                          onClick={e => e.stopPropagation()}
-                        >
-                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                          </svg>
+                        <a href={linkCurso} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 font-medium" onClick={e => e.stopPropagation()}>
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
                           Abrir curso
+                        </a>
+                      )}
+                      {linkDI && (
+                        <a href={linkDI} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-violet-600 hover:text-violet-800 font-medium" onClick={e => e.stopPropagation()}>
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                          Enlace DI
                         </a>
                       )}
                     </div>

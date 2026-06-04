@@ -70,9 +70,10 @@ export default function CoordinadorPage() {
     return true;
   });
 
+  const sortAZ = (l: Curso[]) => [...l].sort((a, b) => String(a.Asignatura ?? '').localeCompare(String(b.Asignatura ?? ''), 'es'));
   const withPriorityFirst = (list: Curso[]) => [
-    ...list.filter(isPriority),
-    ...list.filter(c => !isPriority(c)),
+    ...sortAZ(list.filter(isPriority)),
+    ...sortAZ(list.filter(c => !isPriority(c))),
   ];
 
   // Tab "Todos": all courses filtered + priority first

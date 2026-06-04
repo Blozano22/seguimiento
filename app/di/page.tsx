@@ -12,6 +12,9 @@ interface Curso {
   'Gestor responsable '?: string;
   'Gestor responsable'?: string;
   'Link DI'?: string;
+  Link?: string;
+  Prioridad?: string;
+  PRIORIDAD?: string;
 }
 
 type TabId = 'pendientes' | 'aprobados' | 'devueltos';
@@ -73,10 +76,25 @@ export default function DIPage() {
 
   const gestor = (c: Curso) => String(c['Gestor responsable '] ?? c['Gestor responsable'] ?? '—').trim();
   const getLinkDI = (c: Curso) => String(c['Link DI'] ?? '').trim();
+  const getLinkGC = (c: Curso) => String(c['Link'] ?? '').trim();
 
-  const pendientes = cursos.filter(c => String(c.Estado ?? '').trim() === 'En revisión');
-  const aprobados = cursos.filter(c => { const e = String(c.Estado ?? '').trim(); return e === 'Aprobado DI' || e === 'Aprobado'; });
-  const devueltos = cursos.filter(c => String(c.Estado ?? '').trim() === 'Corrección');
+  function isPriority(c: Curso): boolean {
+    const val = String(c['Prioridad'] ?? c['PRIORIDAD'] ?? '').trim();
+    return val !== '' && val !== '0' && val.toUpperCase() !== 'NO' && val !== 'null';
+  }
+
+  function sortPriorityAZ(list: Curso[]): Curso[] {
+    return [...list].sort((a, b) => {
+      const pa = isPriority(a) ? 0 : 1;
+      const pb = isPriority(b) ? 0 : 1;
+      if (pa !== pb) return pa - pb;
+      return String(a.Asignatura ?? '').localeCompare(String(b.Asignatura ?? ''), 'es');
+    });
+  }
+
+  const pendientes = sortPriorityAZ(cursos.filter(c => String(c.Estado ?? '').trim() === 'En revisión'));
+  const aprobados = sortPriorityAZ(cursos.filter(c => { const e = String(c.Estado ?? '').trim(); return e === 'Aprobado DI' || e === 'Aprobado'; }));
+  const devueltos = sortPriorityAZ(cursos.filter(c => String(c.Estado ?? '').trim() === 'Corrección'));
 
   const tabs: { id: TabId; label: string; count: number; color: string; activeColor: string }[] = [
     { id: 'pendientes', label: 'Pendientes', count: pendientes.length, color: 'bg-orange-100 text-orange-700', activeColor: 'border-violet-600 text-violet-600' },
@@ -171,14 +189,25 @@ export default function DIPage() {
                   <span className="text-sm text-gray-500">{c._nivel}</span>
                   <span className="text-sm text-gray-600 truncate pr-4">{c._programa}</span>
                   <div>
-                    <p className="text-sm font-medium text-gray-900">{c.Asignatura}</p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {isPriority(c) && <span className="shrink-0 text-xs font-bold px-1.5 py-0.5 rounded bg-red-500 text-white uppercase tracking-wide">Prioridad</span>}
+                      <p className="text-sm font-medium text-gray-900">{c.Asignatura}</p>
+                    </div>
                     <p className="text-xs text-gray-400 mt-0.5">Gestor: {gestor(c)}</p>
-                    {getLinkDI(c) && (
-                      <a href={getLinkDI(c)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-violet-600 hover:text-violet-800 mt-1">
-                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                        Abrir enlace
-                      </a>
-                    )}
+                    <div className="flex gap-3 mt-1">
+                      {getLinkGC(c) && (
+                        <a href={getLinkGC(c)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800">
+                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                          Abrir curso
+                        </a>
+                      )}
+                      {getLinkDI(c) && (
+                        <a href={getLinkDI(c)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-violet-600 hover:text-violet-800">
+                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                          Enlace DI
+                        </a>
+                      )}
+                    </div>
                   </div>
 
                   {/* Pendientes: botones de acción */}
