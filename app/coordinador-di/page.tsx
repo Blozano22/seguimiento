@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { api } from '@/lib/api';
+import ObservacionesEditor from '@/components/ObservacionesEditor';
 
 interface Curso {
   _nivel: string;
@@ -78,7 +79,10 @@ export default function CoordinadorDIPage() {
   const [activeTab, setActiveTab] = useState<TabId>('por_asignar');
   const [search, setSearch] = useState('');
   const [nivelFilter, setNivelFilter] = useState('');
+  const [filterEstado, setFilterEstado] = useState('');
   const [saving, setSaving] = useState<string | null>(null);
+  const [sendingReport, setSendingReport] = useState(false);
+  const [reportMsg, setReportMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [messages, setMessages] = useState<{ id: string; type: 'success' | 'error'; text: string }[]>([]);
   const [modal, setModal] = useState<{ curso: Curso; di: string; link: string; obs: string } | null>(null);
 
@@ -92,6 +96,7 @@ export default function CoordinadorDIPage() {
 
   const applyFilters = (list: Curso[]) => list.filter(c => {
     if (nivelFilter && c._nivel !== nivelFilter) return false;
+    if (filterEstado && String(c.Estado ?? '').trim() !== filterEstado) return false;
     const q = search.toLowerCase();
     if (q && !c.Asignatura?.toLowerCase().includes(q) && !c._programa?.toLowerCase().includes(q)) return false;
     return true;
@@ -181,12 +186,48 @@ export default function CoordinadorDIPage() {
               <p className="text-xs text-gray-500">{session?.user?.name} · Coordinador de Diseño Instruccional</p>
             </div>
           </div>
-          <button onClick={() => signOut({ callbackUrl: api('/login') })} className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1.5">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
-            Cerrar sesión
-          </button>
+          <div className="flex items-center gap-3">
+            {reportMsg && (
+              <span className={`text-xs px-2 py-1 rounded-lg font-medium ${reportMsg.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                {reportMsg.text}
+              </span>
+            )}
+            <button
+              onClick={async () => {
+                setSendingReport(true);
+                setReportMsg(null);
+                try {
+                  const res = await fetch(api('/api/report/approved'), { method: 'POST' });
+                  const d = await res.json();
+                  if (!res.ok) throw new Error(d.error);
+                  if (d.count === 0) {
+                    setReportMsg({ type: 'success', text: 'Sin aprobaciones hoy.' });
+                  } else if (!d.ok) {
+                    setReportMsg({ type: 'error', text: `${d.count} aprobados pero el correo falló: ${d.error || ''}` });
+                  } else {
+                    setReportMsg({ type: 'success', text: `Reporte enviado — ${d.count} cursos aprobados hoy.` });
+                  }
+                } catch (err) {
+                  setReportMsg({ type: 'error', text: err instanceof Error ? err.message : 'Error' });
+                } finally {
+                  setSendingReport(false);
+                }
+              }}
+              disabled={sendingReport}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition shrink-0"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              {sendingReport ? 'Enviando...' : 'Reporte aprobados'}
+            </button>
+            <button onClick={() => signOut({ callbackUrl: api('/login') })} className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1.5">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              Cerrar sesión
+            </button>
+          </div>
         </div>
 
         <div className="max-w-7xl mx-auto px-4">
@@ -255,6 +296,16 @@ export default function CoordinadorDIPage() {
           >
             <option value="">Todos los niveles</option>
             {niveles.map(n => <option key={n} value={n}>{n}</option>)}
+          </select>
+          <select
+            value={filterEstado}
+            onChange={e => setFilterEstado(e.target.value)}
+            className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 bg-white"
+          >
+            <option value="">Todos los estados</option>
+            {['En proceso', 'En revisión', 'Aprobado DI', 'Corrección', 'Cargado', 'Producido', 'No empezado'].map(e => (
+              <option key={e} value={e}>{e}</option>
+            ))}
           </select>
         </div>
 
@@ -440,7 +491,7 @@ export default function CoordinadorDIPage() {
       {/* Modal asignación DI */}
       {modal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50" onClick={e => { if (e.target === e.currentTarget) setModal(null); }}>
-          <div className="bg-white rounded-2xl shadow-xl p-6 max-w-md w-full">
+          <div className="bg-white rounded-2xl shadow-xl p-8 max-w-lg w-full">
             <h3 className="font-bold text-gray-900 text-base mb-1">
               {diActual(modal.curso) ? 'Reasignar DI' : 'Asignar DI'}
             </h3>
@@ -471,12 +522,11 @@ export default function CoordinadorDIPage() {
               </div>
               <div>
                 <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">Observaciones</label>
-                <textarea
+                <ObservacionesEditor
                   value={modal.obs}
-                  onChange={e => setModal(m => m ? { ...m, obs: e.target.value } : m)}
+                  onChange={val => setModal(m => m ? { ...m, obs: val } : m)}
                   placeholder="Notas adicionales..."
-                  rows={3}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                  ringColor="focus:ring-violet-500"
                 />
               </div>
             </div>

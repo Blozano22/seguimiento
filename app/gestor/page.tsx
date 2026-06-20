@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { ESTADOS_GESTOR } from '@/config/estados';
 import { api } from '@/lib/api';
+import ObservacionesEditor from '@/components/ObservacionesEditor';
 import type { EstadoOption } from '@/types';
 
 interface Curso {
@@ -123,6 +124,7 @@ export default function GestorPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabId>('todos');
   const [nivelFilter, setNivelFilter] = useState('');
+  const [filterEstado, setFilterEstado] = useState('');
   const [modal, setModal] = useState<{ curso: Curso; tab: TabId; obs: string } | null>(null);
   const [saving, setSaving] = useState(false);
   const [messages, setMessages] = useState<{ id: string; type: 'success' | 'error'; text: string }[]>([]);
@@ -134,6 +136,33 @@ export default function GestorPage() {
   };
 
   useEffect(() => { load(); }, []);
+
+  const handleIniciar = async (curso: Curso) => {
+    setSaving(true);
+    try {
+      const res = await fetch(api('/api/update'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          rol: 'Gestor',
+          responsable: session?.user?.name || '',
+          nivel: curso._nivel,
+          programa: curso._programa,
+          curso: curso.Asignatura,
+          estadoId: 'inicio_contenido',
+          observaciones: '',
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setMessages(m => [...m, { id: Date.now().toString(), type: 'success', text: `Iniciado: "${curso.Asignatura}"` }]);
+      await load();
+    } catch (err) {
+      setMessages(m => [...m, { id: Date.now().toString(), type: 'error', text: err instanceof Error ? err.message : 'Error inesperado' }]);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleConfirm = async () => {
     if (!modal) return;
@@ -176,8 +205,9 @@ export default function GestorPage() {
   const cursosNivel = nivelFilter ? cursos.filter(c => c._nivel === nivelFilter) : cursos;
   for (const c of cursosNivel) counts[estadoTab(c.Estado, c['Estado curso'], fechaCorreccion(c))]++;
 
-  // Filter by active tab + nivel, then sort priorities first
-  const filtered = (activeTab === 'todos' ? cursosNivel : cursosNivel.filter(c => estadoTab(c.Estado, c['Estado curso'], fechaCorreccion(c)) === activeTab));
+  // Filter by active tab + nivel + estado, then sort priorities first
+  const baseFiltered = (activeTab === 'todos' ? cursosNivel : cursosNivel.filter(c => estadoTab(c.Estado, c['Estado curso'], fechaCorreccion(c)) === activeTab));
+  const filtered = filterEstado ? baseFiltered.filter(c => String(c.Estado ?? '').trim() === filterEstado) : baseFiltered;
 
   const sortByDate = (list: Curso[]) => [...list].sort((a, b) => {
     const ta = estadoTab(a.Estado, a['Estado curso'], fechaCorreccion(a));
@@ -231,6 +261,16 @@ export default function GestorPage() {
                 <option value="Especializaciones">Especializaciones</option>
                 <option value="Maestrías">Maestrías</option>
                 <option value="Doctorado">Doctorado</option>
+              </select>
+              <select
+                value={filterEstado}
+                onChange={e => { setFilterEstado(e.target.value); setModal(null); }}
+                className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg bg-white text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              >
+                <option value="">Todos los estados</option>
+                {['En proceso', 'En revisión', 'Aprobado DI', 'Corrección', 'Cargado', 'Producido', 'No empezado'].map(e => (
+                  <option key={e} value={e}>{e}</option>
+                ))}
               </select>
             </div>
             <div className="flex gap-0 overflow-x-auto scrollbar-none -mb-px">
@@ -348,7 +388,7 @@ export default function GestorPage() {
                     {/* Action button / lock */}
                     {editable ? (
                       <button
-                        onClick={() => setModal({ curso, tab, obs: '' })}
+                        onClick={() => tab === 'pendiente' ? handleIniciar(curso) : setModal({ curso, tab, obs: '' })}
                         className="px-3 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition shrink-0"
                       >
                         {tab === 'pendiente' ? 'Iniciar' : tab === 'en_proceso' ? 'Enviar' : 'Corregido'}
@@ -375,20 +415,20 @@ export default function GestorPage() {
         const opt = opciones[0];
         return (
           <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50" onClick={e => { if (e.target === e.currentTarget) setModal(null); }}>
-            <div className="bg-white rounded-2xl shadow-xl p-6 max-w-md w-full">
+            <div className="bg-white rounded-2xl shadow-xl p-8 max-w-lg w-full">
               <h3 className="font-bold text-gray-900 text-base mb-1">{opt?.label}</h3>
               <p className="text-sm font-semibold text-gray-800 mb-0.5 truncate">{modal.curso.Asignatura}</p>
               <p className="text-xs text-gray-400 mb-5">{modal.curso._nivel} · {modal.curso._programa}</p>
-              <div>
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">Observaciones</label>
-                <textarea
-                  value={modal.obs}
-                  onChange={e => setModal(m => m ? { ...m, obs: e.target.value } : m)}
-                  placeholder="Notas adicionales (opcional)..."
-                  rows={3}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
-                />
-              </div>
+              {modal.tab !== 'pendiente' && (
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">Observaciones</label>
+                  <ObservacionesEditor
+                    value={modal.obs}
+                    onChange={val => setModal(m => m ? { ...m, obs: val } : m)}
+                    placeholder="Notas adicionales (opcional)..."
+                  />
+                </div>
+              )}
               <div className="flex gap-2 mt-5">
                 <button onClick={() => setModal(null)} className="flex-1 py-2.5 text-sm border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50">
                   Cancelar

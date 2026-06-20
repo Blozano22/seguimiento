@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { api } from '@/lib/api';
+import ObservacionesEditor from '@/components/ObservacionesEditor';
 
 interface Curso {
   _nivel: string;
@@ -23,9 +24,14 @@ interface Curso {
   'Fin Gestor'?: string;
   'Fecha inicio revisión DI'?: string;
   'Fecha fin revisión DI'?: string;
+  'Estado de la revalidación DI'?: string;
+  'DI asignado'?: string;
+  'DI responsable'?: string;
+  'DI Responsable'?: string;
+  'DI responsable '?: string;
 }
 
-type TabId = 'todos' | 'asignar';
+type TabId = 'todos' | 'asignar' | 'devueltos';
 
 function isPriority(c: Curso): boolean {
   const val = String(c['Prioridad'] ?? c['PRIORIDAD'] ?? '').trim();
@@ -82,6 +88,29 @@ function buildTimeline(c: Curso): TimelineStep[] {
     .map(s => ({ label: s.label, date: s.date!, dias: diff(s.prev, s.date), color: s.color }));
 }
 
+function diActual(c: Curso): string {
+  return String(c['DI asignado'] ?? c['DI responsable'] ?? c['DI Responsable'] ?? c['DI responsable '] ?? '').trim();
+}
+function diasBadge(dias: number | null): string {
+  if (dias === null) return '—';
+  if (dias === 0) return 'Hoy';
+  return dias === 1 ? '1 día' : `${dias} días`;
+}
+function diasClass(dias: number | null): string {
+  if (dias === null) return 'text-gray-300';
+  if (dias <= 3)  return 'text-green-600 font-semibold';
+  if (dias <= 10) return 'text-amber-600 font-semibold';
+  if (dias <= 20) return 'text-orange-700 font-semibold';
+  return 'text-red-700 font-semibold';
+}
+function isDevuelto(c: Curso): boolean {
+  const estado = String(c.Estado ?? '').trim();
+  if (estado === 'Aprobado DI' || estado === 'Aprobado') return false;
+  const estadoCurso = String(c['Estado curso'] ?? '').trim();
+  const revalidacion = String(c['Estado de la revalidación DI'] ?? '').trim();
+  return estado === 'Corrección' || (estadoCurso === 'Corrección' && revalidacion === 'En revalidación');
+}
+
 const ESTADO_BADGE: Record<string, string> = {
   'En proceso':  'bg-blue-100 text-blue-700',
   'En revisión': 'bg-orange-100 text-orange-700',
@@ -99,6 +128,7 @@ export default function CoordinadorPage() {
   const [activeTab, setActiveTab] = useState<TabId>('todos');
   const [search, setSearch] = useState('');
   const [nivelFilter, setNivelFilter] = useState('');
+  const [filterEstado, setFilterEstado] = useState('');
   const [saving, setSaving] = useState<string | null>(null);
   const [messages, setMessages] = useState<{ id: string; type: 'success' | 'error'; text: string }[]>([]);
   const [modal, setModal] = useState<{ curso: Curso; gestor: string; link: string; obs: string } | null>(null);
@@ -106,7 +136,6 @@ export default function CoordinadorPage() {
   const EMPTY_ADD = {
     nivel: '', modalidad: '', programa: '', asignatura: '',
     nombreElectiva: '', tipoAsignatura: '', prioridad: '',
-    programa2: '', modalidad2: '', estadoSemestre: '',
     semestre: '', proyecto: '', codigoPensum: '', codigoPrograma: '',
     codigoAsignatura: '', facultad: '', mallaCurricular: '',
     troncoComun: '', fechaProduccion: '',
@@ -128,6 +157,7 @@ export default function CoordinadorPage() {
 
   const applyFilters = (list: Curso[]) => list.filter(c => {
     if (nivelFilter && c._nivel !== nivelFilter) return false;
+    if (filterEstado && String(c.Estado ?? '').trim() !== filterEstado) return false;
     const q = search.toLowerCase();
     if (q && !c.Asignatura?.toLowerCase().includes(q) && !c._programa?.toLowerCase().includes(q)) return false;
     return true;
@@ -150,6 +180,8 @@ export default function CoordinadorPage() {
     ...sortAZ(applyFilters(cursos.filter(isSinIniciar)).filter(c => !isPriority(c))),
   ];
   const sinAsignarCount = cursos.filter(isSinIniciar).length;
+  const devueltos = sortByDate(applyFilters(cursos.filter(isDevuelto)), getLastStateDate);
+  const devueltosTotal = cursos.filter(isDevuelto).length;
 
 
   const handleModalConfirm = async () => {
@@ -294,18 +326,36 @@ export default function CoordinadorPage() {
                 {sinAsignarCount}
               </span>
             </button>
+
+            <button
+              onClick={() => setActiveTab('devueltos')}
+              className={`flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${
+                activeTab === 'devueltos'
+                  ? 'border-red-500 text-red-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+              </svg>
+              Devueltos
+              <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${activeTab === 'devueltos' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-500'}`}>
+                {devueltosTotal}
+              </span>
+            </button>
           </div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-6">
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mb-6">
           {[
             { label: 'Total', value: cursos.length, color: 'text-gray-900' },
             { label: 'Sin iniciar', value: cursos.filter(isSinIniciar).length, color: 'text-gray-500' },
             { label: 'En proceso', value: cursos.filter(c => String(c.Estado ?? '').trim() === 'En proceso').length, color: 'text-blue-600' },
             { label: 'En revisión', value: cursos.filter(c => String(c.Estado ?? '').trim() === 'En revisión').length, color: 'text-orange-600' },
+            { label: 'Corrección', value: devueltosTotal, color: 'text-red-600' },
             { label: 'Aprobados', value: cursos.filter(c => { const e = String(c.Estado ?? '').trim(); return e === 'Aprobado DI' || e === 'Aprobado'; }).length, color: 'text-green-600' },
           ].map(s => (
             <div key={s.label} className="bg-white rounded-xl border border-gray-200 p-3">
@@ -342,8 +392,18 @@ export default function CoordinadorPage() {
             <option value="">Todos los niveles</option>
             {niveles.map(n => <option key={n} value={n}>{n}</option>)}
           </select>
+          <select
+            value={filterEstado}
+            onChange={e => setFilterEstado(e.target.value)}
+            className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+          >
+            <option value="">Todos los estados</option>
+            {['En proceso', 'En revisión', 'Aprobado DI', 'Corrección', 'Cargado', 'Producido', 'No empezado'].map(e => (
+              <option key={e} value={e}>{e}</option>
+            ))}
+          </select>
           <span className="text-xs text-gray-400">
-            {activeTab === 'todos' ? `${todosFiltered.length} cursos` : `${sinIniciar.length} sin iniciar`}
+            {activeTab === 'todos' ? `${todosFiltered.length} cursos` : activeTab === 'devueltos' ? `${devueltos.length} devueltos` : `${sinIniciar.length} sin iniciar`}
           </span>
           <button
             onClick={() => { setAddPrograms([]); setAddModal({ ...EMPTY_ADD }); }}
@@ -491,6 +551,45 @@ export default function CoordinadorPage() {
                 </div>
               </div>
             )}
+
+            {/* ── TAB: DEVUELTOS ── */}
+            {activeTab === 'devueltos' && (
+              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <div className="min-w-[870px]">
+                    <div className="grid grid-cols-[65px_150px_1fr_130px_70px_150px_100px] text-xs font-semibold text-gray-500 uppercase px-5 py-3 border-b border-gray-100 bg-gray-50 gap-3">
+                      <span>Nivel</span>
+                      <span>Programa</span>
+                      <span>Asignatura</span>
+                      <span>Gestor</span>
+                      <span>Días</span>
+                      <span>DI que devolvió</span>
+                      <span>Estado</span>
+                    </div>
+                    <div className="divide-y divide-gray-50">
+                      {devueltos.length === 0 ? (
+                        <div className="text-center py-12 text-gray-400 text-sm">
+                          No hay cursos devueltos para corrección.
+                        </div>
+                      ) : devueltos.map((c, i) => {
+                        const dDV = diasDesde(parseDate(c['Fecha fin revisión DI']));
+                        return (
+                          <div key={i} className="grid grid-cols-[65px_150px_1fr_130px_70px_150px_100px] items-center gap-3 px-5 py-3 hover:bg-gray-50/50">
+                            <span className="text-xs text-gray-400 truncate">{c._nivel}</span>
+                            <span className="text-xs text-gray-500 truncate">{c._programa}</span>
+                            <span className="text-sm font-medium text-gray-900 truncate">{c.Asignatura}</span>
+                            <span className="text-xs text-gray-500 truncate">{gestorActual(c) || '—'}</span>
+                            <span className={`text-xs ${diasClass(dDV)}`}>{diasBadge(dDV)}</span>
+                            <span className="text-xs text-gray-500 truncate">{diActual(c) || '—'}</span>
+                            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-red-100 text-red-700">Corrección</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </>
         )}
       </main>
@@ -498,7 +597,7 @@ export default function CoordinadorPage() {
       {/* Modal asignación */}
       {modal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50" onClick={e => { if (e.target === e.currentTarget) setModal(null); }}>
-          <div className="bg-white rounded-2xl shadow-xl p-6 max-w-md w-full">
+          <div className="bg-white rounded-2xl shadow-xl p-8 max-w-lg w-full">
             <h3 className="font-bold text-gray-900 text-base mb-1">
               {gestorActual(modal.curso) ? 'Reasignar gestor' : 'Asignar gestor'}
             </h3>
@@ -529,12 +628,11 @@ export default function CoordinadorPage() {
               </div>
               <div>
                 <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">Observaciones</label>
-                <textarea
+                <ObservacionesEditor
                   value={modal.obs}
-                  onChange={e => setModal(m => m ? { ...m, obs: e.target.value } : m)}
+                  onChange={val => setModal(m => m ? { ...m, obs: val } : m)}
                   placeholder="Notas adicionales..."
-                  rows={3}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                  ringColor="focus:ring-emerald-500"
                 />
               </div>
             </div>
@@ -658,12 +756,6 @@ export default function CoordinadorPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Estado semestre</label>
-                  <input type="text" value={addModal.estadoSemestre} onChange={e => setAdd('estadoSemestre', e.target.value)}
-                    placeholder="Ej. En proceso"
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-                </div>
-                <div>
                   <label className="text-xs font-semibold text-gray-500 mb-1 block">Proyecto</label>
                   <input type="text" value={addModal.proyecto} onChange={e => setAdd('proyecto', e.target.value)}
                     placeholder="Ej. NOA 2025"
@@ -706,23 +798,6 @@ export default function CoordinadorPage() {
                 <div>
                   <label className="text-xs font-semibold text-gray-500 mb-1 block">Fecha prog. producción</label>
                   <input type="month" value={addModal.fechaProduccion} onChange={e => setAdd('fechaProduccion', e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-                </div>
-              </div>
-
-              {/* Sección: Programa secundario */}
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pt-1">Programa secundario</p>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Programa 2</label>
-                  <input type="text" value={addModal.programa2} onChange={e => setAdd('programa2', e.target.value)}
-                    placeholder="Programa secundario"
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Modalidad 2</label>
-                  <input type="text" value={addModal.modalidad2} onChange={e => setAdd('modalidad2', e.target.value)}
-                    placeholder="Modalidad secundaria"
                     className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500" />
                 </div>
               </div>

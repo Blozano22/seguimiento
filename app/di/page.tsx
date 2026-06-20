@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { api } from '@/lib/api';
+import ObservacionesEditor from '@/components/ObservacionesEditor';
 
 interface Curso {
   _nivel: string;
@@ -57,6 +58,7 @@ export default function DIPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabId>('pendientes');
   const [nivelFilter, setNivelFilter] = useState('');
+  const [filterEstado, setFilterEstado] = useState('');
   const [pendingAction, setPendingAction] = useState<{ curso: Curso; actionId: ActionId; obs: string } | null>(null);
   const [saving, setSaving] = useState(false);
   const [messages, setMessages] = useState<{ id: string; type: 'success' | 'error'; text: string }[]>([]);
@@ -164,7 +166,8 @@ export default function DIPage() {
     { id: 'devueltos', label: 'Devueltos', count: devueltos.length, color: 'bg-red-100 text-red-700', activeColor: 'border-red-500 text-red-600' },
   ];
 
-  const currentList = activeTab === 'pendientes' ? pendientes : activeTab === 'aprobados' ? aprobados : devueltos;
+  const rawList = activeTab === 'pendientes' ? pendientes : activeTab === 'aprobados' ? aprobados : devueltos;
+  const currentList = filterEstado ? rawList.filter(c => String(c.Estado ?? '').trim() === filterEstado) : rawList;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -218,6 +221,16 @@ export default function DIPage() {
               <option value="Especializaciones">Especializaciones</option>
               <option value="Maestrías">Maestrías</option>
               <option value="Doctorado">Doctorado</option>
+            </select>
+            <select
+              value={filterEstado}
+              onChange={e => setFilterEstado(e.target.value)}
+              className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg bg-white text-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-400 shrink-0"
+            >
+              <option value="">Todos los estados</option>
+              {['En proceso', 'En revisión', 'Aprobado DI', 'Corrección', 'Cargado', 'Producido', 'No empezado'].map(e => (
+                <option key={e} value={e}>{e}</option>
+              ))}
             </select>
           </div>
         </div>
@@ -358,7 +371,7 @@ export default function DIPage() {
       {/* Confirm modal */}
       {pendingAction && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full">
+          <div className="bg-white rounded-2xl shadow-xl p-8 max-w-lg w-full">
             <h3 className="font-bold text-gray-900 text-base mb-2">
               {pendingAction.actionId === 'aprobado' ? 'Aprobar curso' :
                pendingAction.actionId === 'devuelto' ? 'Devolver para corrección' :
@@ -370,12 +383,11 @@ export default function DIPage() {
             <p className="text-xs text-gray-400 mb-4">{pendingAction.curso._nivel} · {pendingAction.curso._programa}</p>
             <div className="mb-5">
               <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">Observaciones</label>
-              <textarea
+              <ObservacionesEditor
                 value={pendingAction.obs}
-                onChange={e => setPendingAction(p => p ? { ...p, obs: e.target.value } : p)}
+                onChange={val => setPendingAction(p => p ? { ...p, obs: val } : p)}
                 placeholder="Notas adicionales (opcional)..."
-                rows={3}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none"
+                ringColor="focus:ring-violet-500"
               />
             </div>
             <div className="flex gap-2">

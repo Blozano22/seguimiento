@@ -244,7 +244,7 @@ export function buildEmailHtml(params: {
       ${params.observaciones ? `
       <div style="height:1px;background:#e8eaf0;margin:20px 0"></div>
       <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#1300fd;padding-bottom:8px;border-bottom:2px solid #1300fd;margin-bottom:12px">Observaciones</div>
-      <div style="background:#fffbeb;border-left:3px solid #f59e0b;border-radius:0 8px 8px 0;padding:14px 16px;font-size:13px;color:#1a1a2e;line-height:1.6">${params.observaciones.replace(/\r\n/g, '\n').split('\n').map(l => l ? `<p style="margin:0 0 8px">${l}</p>` : '<p style="margin:0 0 8px">&nbsp;</p>').join('')}</div>
+      <div style="background:#fffbeb;border-left:3px solid #f59e0b;border-radius:0 8px 8px 0;padding:14px 16px;font-size:13px;color:#1a1a2e;line-height:1.6">${/<[a-z][\s\S]*>/i.test(params.observaciones) ? params.observaciones : params.observaciones.replace(/\r\n/g, '\n').split('\n').map(l => l ? `<p style="margin:0 0 8px">${l}</p>` : '<p style="margin:0 0 8px">&nbsp;</p>').join('')}</div>
       ` : ''}
 
       ${(params.linkGC || showLinkDI) ? `

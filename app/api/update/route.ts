@@ -12,7 +12,9 @@ function todayString(): string {
 }
 
 function lookupEmail(list: { nombre: string; email: string }[], nombre: string): string | undefined {
-  return list.find(p => p.nombre === nombre)?.email;
+  const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+  const n = norm(nombre);
+  return list.find(p => norm(p.nombre) === n)?.email;
 }
 
 // Busca el email de un responsable en gestores o DIs
@@ -42,7 +44,7 @@ export async function POST(req: NextRequest) {
     const courseInfo = await getCourseInfo(nivel, programa, curso);
     const courseLinks = getCourseLinks(nivel, programa, curso);
     const gestorNombre = String(courseInfo?.['Gestor responsable'] ?? courseInfo?.['Gestor responsable '] ?? '').trim();
-    const diNombre = String(courseInfo?.['DI responsable'] ?? '').trim();
+    const diNombre = String(courseInfo?.['DI responsable'] ?? courseInfo?.['DI asignado'] ?? courseInfo?.['DI Responsable'] ?? '').trim();
 
     const today = new Date();
     const updates: Record<string, unknown> = {};
