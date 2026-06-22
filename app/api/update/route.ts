@@ -27,9 +27,9 @@ function resolveFromEmail(responsable: string, rol: string): string | undefined 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { rol, responsable, nivel, programa, curso, estadoId, observaciones } = body as {
+    const { rol, responsable, nivel, programa, curso, estadoId, observaciones, link } = body as {
       rol: string; responsable: string; nivel: string;
-      programa: string; curso: string; estadoId: string; observaciones?: string;
+      programa: string; curso: string; estadoId: string; observaciones?: string; link?: string;
     };
 
     if (!nivel || !curso || !estadoId) {
@@ -103,7 +103,9 @@ export async function POST(req: NextRequest) {
           programa,
           curso,
           fecha: todayString(),
-          linkGC: estadoId === 'enviado' ? (courseLinks.linkGC || undefined) : undefined,
+          linkGC: estadoId === 'enviado'
+            ? (link?.trim() || courseLinks.linkGC || undefined)
+            : estadoId === 'devuelto' ? undefined : (courseLinks.linkGC || undefined),
           linkDI: estadoId !== 'enviado' ? (courseLinks.linkDI || undefined) : undefined,
           observaciones: observaciones?.trim() || undefined,
         }),

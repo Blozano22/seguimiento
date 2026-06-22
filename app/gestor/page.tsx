@@ -125,7 +125,7 @@ export default function GestorPage() {
   const [activeTab, setActiveTab] = useState<TabId>('todos');
   const [nivelFilter, setNivelFilter] = useState('');
   const [filterEstado, setFilterEstado] = useState('');
-  const [modal, setModal] = useState<{ curso: Curso; tab: TabId; obs: string } | null>(null);
+  const [modal, setModal] = useState<{ curso: Curso; tab: TabId; obs: string; link: string } | null>(null);
   const [saving, setSaving] = useState(false);
   const [messages, setMessages] = useState<{ id: string; type: 'success' | 'error'; text: string }[]>([]);
 
@@ -181,6 +181,7 @@ export default function GestorPage() {
           curso: modal.curso.Asignatura,
           estadoId: opciones[0].id,
           observaciones: modal.obs,
+          link: modal.link || undefined,
         }),
       });
       const data = await res.json();
@@ -354,7 +355,7 @@ export default function GestorPage() {
                         </span>
                       )}
                       <p className="font-semibold text-gray-900">{curso.Asignatura}</p>
-                      {linkCurso && (
+                      {linkCurso && tab !== 'correccion' && (
                         <a href={linkCurso} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 font-medium" onClick={e => e.stopPropagation()}>
                           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
                           Abrir curso
@@ -388,7 +389,7 @@ export default function GestorPage() {
                     {/* Action button / lock */}
                     {editable ? (
                       <button
-                        onClick={() => tab === 'pendiente' ? handleIniciar(curso) : setModal({ curso, tab, obs: '' })}
+                        onClick={() => tab === 'pendiente' ? handleIniciar(curso) : setModal({ curso, tab, obs: '', link: '' })}
                         className="px-3 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition shrink-0"
                       >
                         {tab === 'pendiente' ? 'Iniciar' : tab === 'en_proceso' ? 'Enviar' : 'Corregido'}
@@ -419,6 +420,18 @@ export default function GestorPage() {
               <h3 className="font-bold text-gray-900 text-base mb-1">{opt?.label}</h3>
               <p className="text-sm font-semibold text-gray-800 mb-0.5 truncate">{modal.curso.Asignatura}</p>
               <p className="text-xs text-gray-400 mb-5">{modal.curso._nivel} · {modal.curso._programa}</p>
+              {modal.tab === 'en_proceso' && (
+                <div className="mb-4">
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">Link del curso</label>
+                  <input
+                    type="url"
+                    value={modal.link}
+                    onChange={e => setModal(m => m ? { ...m, link: e.target.value } : m)}
+                    placeholder="https://..."
+                    className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                  />
+                </div>
+              )}
               {modal.tab !== 'pendiente' && (
                 <div>
                   <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">Observaciones</label>
