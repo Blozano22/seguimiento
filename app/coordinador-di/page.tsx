@@ -16,6 +16,7 @@ interface Curso {
   Semestre?: string;
   Link?: string;
   'Link DI'?: string;
+  'Link Gestor'?: string;
   'Gestor responsable '?: string;
   'Gestor responsable'?: string;
   'DI asignado'?: string;
@@ -46,8 +47,8 @@ function gestorActual(c: Curso): string {
 function linkDI(c: Curso): string {
   return String(c['Link DI'] ?? '').trim();
 }
-function linkGC(c: Curso): string {
-  return String(c['Link'] ?? '').trim();
+function linkGestor(c: Curso): string {
+  return String(c['Link Gestor'] ?? '').trim();
 }
 function parseDate(s: unknown): Date | null {
   if (!s) return null;
@@ -345,8 +346,8 @@ export default function CoordinadorDIPage() {
                             </div>
                             <div className="min-w-0">
                               <p className="text-sm font-medium text-gray-900 truncate">{c.Asignatura}</p>
-                              {linkGC(c) && (
-                                <a href={linkGC(c)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 font-medium mt-0.5" onClick={e => e.stopPropagation()}>
+                              {linkGestor(c) && (
+                                <a href={linkGestor(c)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 font-medium mt-0.5" onClick={e => e.stopPropagation()}>
                                   <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
                                   Ver curso
                                 </a>
@@ -399,8 +400,8 @@ export default function CoordinadorDIPage() {
                             </div>
                             <div className="min-w-0">
                               <p className="text-sm font-medium text-gray-900 truncate">{c.Asignatura}</p>
-                              {linkGC(c) && (
-                                <a href={linkGC(c)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 font-medium mt-0.5" onClick={e => e.stopPropagation()}>
+                              {linkGestor(c) && (
+                                <a href={linkGestor(c)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 font-medium mt-0.5" onClick={e => e.stopPropagation()}>
                                   <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
                                   Ver curso
                                 </a>

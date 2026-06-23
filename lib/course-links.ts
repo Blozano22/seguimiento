@@ -3,7 +3,7 @@ import path from 'path';
 
 const LINKS_PATH = path.join(process.cwd(), 'data', 'course-links.json');
 
-type LinksMap = Record<string, { linkDI?: string; linkGC?: string }>;
+type LinksMap = Record<string, { linkDI?: string; linkGC?: string; linkGestor?: string }>;
 
 function readLinks(): LinksMap {
   try {
@@ -43,6 +43,13 @@ export function setLinkGC(nivel: string, programa: string, asignatura: string, l
   writeLinks(data);
 }
 
+export function setLinkGestor(nivel: string, programa: string, asignatura: string, link: string): void {
+  const data = readLinks();
+  const k = courseKey(nivel, programa, asignatura);
+  data[k] = { ...data[k], linkGestor: link };
+  writeLinks(data);
+}
+
 export function mergeLinks(courses: Record<string, unknown>[]): Record<string, unknown>[] {
   const data = readLinks();
   return courses.map(c => {
@@ -54,11 +61,12 @@ export function mergeLinks(courses: Record<string, unknown>[]): Record<string, u
     const patched = { ...c };
     if (links?.linkDI) patched['Link DI'] = links.linkDI;
     if (links?.linkGC) patched['Link'] = links.linkGC;
+    if (links?.linkGestor) patched['Link Gestor'] = links.linkGestor;
     return patched;
   });
 }
 
-export function getCourseLinks(nivel: string, programa: string, asignatura: string): { linkGC?: string; linkDI?: string } {
+export function getCourseLinks(nivel: string, programa: string, asignatura: string): { linkGC?: string; linkDI?: string; linkGestor?: string } {
   const data = readLinks();
   return data[courseKey(nivel, programa, asignatura)] ?? {};
 }
