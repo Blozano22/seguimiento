@@ -4,7 +4,7 @@ import { ESTADOS_GESTOR, ESTADOS_DI } from '@/config/estados';
 import { sendEmail, buildEmailHtml } from '@/lib/email';
 import { NOTIF_BASE } from '@/config/notificaciones';
 import { getGestores, getDIs } from '@/lib/user-management';
-import { getCourseLinks } from '@/lib/course-links';
+import { getCourseLinks, setLinkGC } from '@/lib/course-links';
 
 function todayString(): string {
   const d = new Date();
@@ -71,6 +71,10 @@ export async function POST(req: NextRequest) {
     const ok = await updateCourse(nivel, curso, updates, programa);
     if (!ok) {
       return NextResponse.json({ error: `No se encontró el curso "${curso}" en la hoja ${nivel}` }, { status: 404 });
+    }
+
+    if (estadoId === 'enviado' && link?.trim()) {
+      setLinkGC(nivel, programa, curso, link.trim());
     }
 
     // Notificaciones

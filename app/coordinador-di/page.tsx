@@ -46,6 +46,9 @@ function gestorActual(c: Curso): string {
 function linkDI(c: Curso): string {
   return String(c['Link DI'] ?? '').trim();
 }
+function linkGC(c: Curso): string {
+  return String(c['Link'] ?? '').trim();
+}
 function parseDate(s: unknown): Date | null {
   if (!s) return null;
   if (s instanceof Date) return s;
@@ -340,7 +343,15 @@ export default function CoordinadorDIPage() {
                               <p className="text-xs text-gray-500 truncate">{c._programa}</p>
                               {c._modalidad && <p className="text-xs text-gray-400 truncate italic">{c._modalidad}</p>}
                             </div>
-                            <span className="text-sm font-medium text-gray-900 truncate">{c.Asignatura}</span>
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-gray-900 truncate">{c.Asignatura}</p>
+                              {linkGC(c) && (
+                                <a href={linkGC(c)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 font-medium mt-0.5" onClick={e => e.stopPropagation()}>
+                                  <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                                  Ver curso
+                                </a>
+                              )}
+                            </div>
                             <span className="text-xs text-gray-500 truncate">{gestorActual(c) || '—'}</span>
                             <span className={`text-xs ${diasClass(dPA)}`}>{diasBadge(dPA)}</span>
                             <button
@@ -386,7 +397,15 @@ export default function CoordinadorDIPage() {
                               <p className="text-xs text-gray-500 truncate">{c._programa}</p>
                               {c._modalidad && <p className="text-xs text-gray-400 truncate italic">{c._modalidad}</p>}
                             </div>
-                            <span className="text-sm font-medium text-gray-900 truncate">{c.Asignatura}</span>
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-gray-900 truncate">{c.Asignatura}</p>
+                              {linkGC(c) && (
+                                <a href={linkGC(c)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 font-medium mt-0.5" onClick={e => e.stopPropagation()}>
+                                  <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                                  Ver curso
+                                </a>
+                              )}
+                            </div>
                             <span className="text-xs text-gray-500 truncate">{gestorActual(c) || '—'}</span>
                             <span className={`text-xs ${diasClass(dAS)}`}>{diasBadge(dAS)}</span>
                             <span className="text-xs font-medium text-violet-700 bg-violet-50 px-2 py-0.5 rounded-full truncate border border-violet-200" title={diActual(c)}>
