@@ -173,21 +173,25 @@ export async function updateCourse(
   updates: Record<string, unknown>,
   programa?: string
 ): Promise<boolean> {
-  // 1. Always update the local Excel as backup
+  // 1. Always update the local Excel as backup (best-effort when Google is primary)
   const excelOk = excel.updateCourse(nivel, asignatura, updates, programa);
 
-  // 2. Update Google Sheets (the primary database)
+  // 2. Update Google Sheets (the primary database when credentials are configured)
   if (hasGoogleCredentials()) {
     try {
       await updateGoogleSheet(nivel, asignatura, updates, programa);
       console.log(`[sheets] ✅ Google Sheets actualizado: "${asignatura}" — campos: ${Object.keys(updates).join(', ')}`);
+      // Google Sheets is the source of truth: success is decided by it, not the
+      // (possibly stale) local Excel. A course present only in the Sheet must NOT 404.
+      return true;
     } catch (err) {
       console.error('[sheets] ❌ Google Sheets falló:', err);
+      // Google is primary but failed — fall back to whether the Excel backup worked.
+      return excelOk;
     }
-  } else {
-    console.log('[sheets] ℹ️ Sin credenciales de Google — solo Excel local actualizado');
   }
 
+  console.log('[sheets] ℹ️ Sin credenciales de Google — solo Excel local actualizado');
   return excelOk;
 }
 
