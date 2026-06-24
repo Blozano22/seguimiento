@@ -31,7 +31,12 @@ export async function POST(req: NextRequest) {
     };
 
     const ok = await updateCourse(nivel, curso, updates, programa);
-    if (!ok) return NextResponse.json({ error: 'Curso no encontrado' }, { status: 404 });
+    // if (!ok) return NextResponse.json({ error: 'Curso no encontrado' }, { status: 404 });
+    const ok = await updateCourse(nivel, curso, updates, programa);
+if (!ok) {
+  console.error('[api/assign] NO ENCONTRADO →', JSON.stringify({ nivel, programa, curso }));
+  return NextResponse.json({ error: 'Curso no encontrado' }, { status: 404 });
+}
 
     if (link && link.trim()) {
       setLinkGC(nivel, programa, curso, link.trim());
